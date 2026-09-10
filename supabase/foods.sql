@@ -61,7 +61,10 @@ as $$
       and (
         p.role = 'admin'
         or p.access_mode = 'internal_admin'
-        or p.is_active = true
+        or (
+          p.is_active = true
+          and (p.access_expires_at is null or p.access_expires_at > now())
+        )
       )
   );
 $$;

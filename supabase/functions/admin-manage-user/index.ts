@@ -20,6 +20,7 @@ type Body = {
   fullName?: string
   userId?: string
   grantAccess?: boolean
+  accessDays?: 30 | 45 | 90 | null
 }
 
 function json(data: unknown, status = 200) {
@@ -73,6 +74,18 @@ Deno.serve(async (req) => {
         return json({ error: 'Email y contraseña (mín. 6) son obligatorios' }, 400)
       }
 
+      const grant = Boolean(body.grantAccess)
+      const accessDays = body.accessDays === undefined ? 45 : body.accessDays
+      if (
+        grant &&
+        accessDays !== null &&
+        accessDays !== 30 &&
+        accessDays !== 45 &&
+        accessDays !== 90
+      ) {
+        return json({ error: 'accessDays inválido' }, 400)
+      }
+
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
         password,
@@ -83,7 +96,15 @@ Deno.serve(async (req) => {
         return json({ error: createErr?.message || 'No se pudo crear' }, 400)
       }
 
-      const grant = Boolean(body.grantAccess)
+      const accessExpiresAt = (() => {
+        if (!grant) return null
+        if (accessDays === null) return null
+        if (accessDays !== 30 && accessDays !== 45 && accessDays !== 90) {
+          return new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString()
+        }
+        return new Date(Date.now() + 1000 * 60 * 60 * 24 * accessDays).toISOString()
+      })()
+
       await admin.from('profiles').upsert({
         id: created.user.id,
         email,
@@ -91,9 +112,7 @@ Deno.serve(async (req) => {
         role: 'user',
         access_mode: grant ? 'manual_preview' : 'billing_managed',
         is_active: grant,
-        access_expires_at: grant
-          ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString()
-          : null,
+        access_expires_at: accessExpiresAt,
       })
 
       return json({ ok: true, userId: created.user.id })
