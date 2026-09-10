@@ -74,6 +74,11 @@ export default function AdminAccessPage() {
       setError('No puedes gestionar el acceso de tu propia cuenta');
       return;
     }
+    const row = rows.find((r) => r.id === id);
+    if (row && isAdminProfile(row)) {
+      setError('No se puede modificar el acceso de una cuenta admin');
+      return;
+    }
     setBusyId(id);
     setError(null);
     try {
@@ -88,7 +93,7 @@ export default function AdminAccessPage() {
       await load();
       await refreshProfile();
     } finally {
-      setBusyId(null);
+      setBusyId((cur) => (cur === id ? null : cur));
     }
   };
 
@@ -117,7 +122,7 @@ export default function AdminAccessPage() {
       await load();
       await refreshProfile();
     } finally {
-      setBusyId(null);
+      setBusyId((cur) => (cur === id ? null : cur));
     }
   };
 
@@ -138,7 +143,7 @@ export default function AdminAccessPage() {
       setError(msg);
       throw err instanceof Error ? err : new Error(msg);
     } finally {
-      setBusyId(null);
+      setBusyId((cur) => (cur === CREATE_BUSY ? null : cur));
     }
   };
 
@@ -165,7 +170,7 @@ export default function AdminAccessPage() {
     } catch (err) {
       setError(errMessage(err, 'No se pudo cambiar la contraseña'));
     } finally {
-      setBusyId(null);
+      setBusyId((cur) => (cur === id ? null : cur));
     }
   };
 
@@ -188,7 +193,7 @@ export default function AdminAccessPage() {
     } catch (err) {
       setError(errMessage(err, 'No se pudo eliminar la cuenta'));
     } finally {
-      setBusyId(null);
+      setBusyId((cur) => (cur === id ? null : cur));
     }
   };
 
@@ -224,7 +229,7 @@ export default function AdminAccessPage() {
       {error ? <p className="mb-3 rounded-2xl bg-coral-50 px-4 py-3 text-sm text-coral-600">{error}</p> : null}
 
       <div className="mb-6">
-        <CreateNutritionistForm busy={busyId === CREATE_BUSY} onSubmit={create} />
+        <CreateNutritionistForm busy={busyId !== null} onSubmit={create} />
       </div>
 
       <div className="space-y-2">
@@ -233,7 +238,7 @@ export default function AdminAccessPage() {
             key={row.id}
             row={row}
             selfId={user?.id}
-            busy={busyId === row.id}
+            busy={busyId !== null}
             durationDraft={draftFor(row.id)}
             onDurationDraftChange={(days) => setDraft(row.id, days)}
             onGrant={() => void grant(row.id, draftFor(row.id))}
