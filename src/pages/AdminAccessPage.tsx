@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import { resolveLiteAccess } from '@/lib/access';
+import {
+  buildGrantProfilePatch,
+  buildRevokeProfilePatch,
+  isAdminProfile,
+  type AccessDays,
+} from '@/lib/adminAccess';
+import {
+  createNutritionist,
+  deleteNutritionist,
+  setNutritionistPassword,
+} from '@/lib/adminManageUserClient';
 import { supabase } from '@/lib/supabase';
+import CreateNutritionistForm from '@/components/admin/CreateNutritionistForm';
+import UserAccessCard from '@/components/admin/UserAccessCard';
 
 type UserRow = {
   id: string;
@@ -15,13 +27,11 @@ type UserRow = {
   access_expires_at: string | null;
 };
 
-function rowStatus(row: UserRow) {
-  return resolveLiteAccess({
-    role: row.role,
-    accessMode: row.access_mode,
-    isActive: row.is_active,
-    accessExpiresAt: row.access_expires_at,
-  });
+const CREATE_BUSY = '__create__';
+const DEFAULT_DAYS: AccessDays = 45;
+
+function errMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
 }
 
 export default function AdminAccessPage() {
@@ -29,6 +39,7 @@ export default function AdminAccessPage() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [durationDrafts, setDurationDrafts] = useState<Record<string, AccessDays>>({});
 
   const load = useCallback(async () => {
     if (!supabase) {
@@ -51,46 +62,134 @@ export default function AdminAccessPage() {
     void load();
   }, [load]);
 
-  const grantAccess = async (id: string) => {
-    if (!supabase) return;
-    setBusyId(id);
-    const { error: uErr } = await supabase
-      .from('profiles')
-      .update({
-        access_mode: 'manual_preview',
-        is_active: true,
-        access_expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-    setBusyId(null);
-    if (uErr) {
-      setError(uErr.message);
-      return;
-    }
-    await load();
-    await refreshProfile();
+  const draftFor = (id: string): AccessDays => durationDrafts[id] ?? DEFAULT_DAYS;
+
+  const setDraft = (id: string, days: AccessDays) => {
+    setDurationDrafts((prev) => ({ ...prev, [id]: days }));
   };
 
-  const revokeAccess = async (id: string) => {
+  const grant = async (id: string, days: AccessDays) => {
     if (!supabase) return;
-    setBusyId(id);
-    const { error: uErr } = await supabase
-      .from('profiles')
-      .update({
-        access_mode: 'lite_disabled',
-        is_active: false,
-        access_expires_at: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-    setBusyId(null);
-    if (uErr) {
-      setError(uErr.message);
+    if (id === user?.id) {
+      setError('No puedes gestionar el acceso de tu propia cuenta');
       return;
     }
-    await load();
-    await refreshProfile();
+    setBusyId(id);
+    setError(null);
+    try {
+      const { error: uErr } = await supabase
+        .from('profiles')
+        .update(buildGrantProfilePatch(days))
+        .eq('id', id);
+      if (uErr) {
+        setError(uErr.message);
+        return;
+      }
+      await load();
+      await refreshProfile();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const revoke = async (id: string) => {
+    if (!supabase) return;
+    if (id === user?.id) {
+      setError('No puedes quitar el acceso de tu propia cuenta');
+      return;
+    }
+    const row = rows.find((r) => r.id === id);
+    if (row && isAdminProfile(row)) {
+      setError('No se puede quitar el acceso de una cuenta admin');
+      return;
+    }
+    setBusyId(id);
+    setError(null);
+    try {
+      const { error: uErr } = await supabase
+        .from('profiles')
+        .update(buildRevokeProfilePatch())
+        .eq('id', id);
+      if (uErr) {
+        setError(uErr.message);
+        return;
+      }
+      await load();
+      await refreshProfile();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const create = async (input: {
+    fullName: string;
+    email: string;
+    password: string;
+    grantAccess: boolean;
+    accessDays: AccessDays;
+  }) => {
+    setBusyId(CREATE_BUSY);
+    setError(null);
+    try {
+      await createNutritionist(input);
+      await load();
+    } catch (err) {
+      const msg = errMessage(err, 'No se pudo crear la cuenta');
+      setError(msg);
+      throw err instanceof Error ? err : new Error(msg);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const resetPassword = async (id: string) => {
+    if (id === user?.id) {
+      setError('No puedes cambiar la clave de tu propia cuenta desde aquí');
+      return;
+    }
+    const row = rows.find((r) => r.id === id);
+    if (row && isAdminProfile(row)) {
+      setError('No se puede cambiar la clave de una cuenta admin');
+      return;
+    }
+    const password = window.prompt('Nueva contraseña temporal (mín. 6)');
+    if (!password) return;
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    setBusyId(id);
+    setError(null);
+    try {
+      await setNutritionistPassword(id, password);
+    } catch (err) {
+      setError(errMessage(err, 'No se pudo cambiar la contraseña'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const remove = async (id: string) => {
+    if (id === user?.id) {
+      setError('No puedes eliminar tu propia cuenta');
+      return;
+    }
+    const row = rows.find((r) => r.id === id);
+    if (row && isAdminProfile(row)) {
+      setError('No se puede eliminar una cuenta admin');
+      return;
+    }
+    if (!window.confirm('¿Eliminar esta cuenta? No se puede deshacer.')) return;
+    setBusyId(id);
+    setError(null);
+    try {
+      await deleteNutritionist(id);
+      await load();
+    } catch (err) {
+      setError(errMessage(err, 'No se pudo eliminar la cuenta'));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   if (!admin) {
@@ -124,65 +223,28 @@ export default function AdminAccessPage() {
 
       {error ? <p className="mb-3 rounded-2xl bg-coral-50 px-4 py-3 text-sm text-coral-600">{error}</p> : null}
 
+      <div className="mb-6">
+        <CreateNutritionistForm busy={busyId === CREATE_BUSY} onSubmit={create} />
+      </div>
+
       <div className="space-y-2">
-        {rows.map((row) => {
-          const status = rowStatus(row);
-          const isSelf = row.id === user?.id;
-          const isAdminRow = row.role === 'admin' || row.access_mode === 'internal_admin';
-          const hasAccess = status === 'active';
-
-          return (
-            <div key={row.id} className="ng-card p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-slate-900">
-                    {row.full_name || 'Sin nombre'}
-                    {isSelf ? <span className="ng-muted ml-2">(tú)</span> : null}
-                  </p>
-                  <p className="ng-muted">{row.email}</p>
-                  <p className="ng-muted mt-1">
-                    {isAdminRow ? 'Admin · ' : ''}
-                    {hasAccess ? (
-                      <span className="inline-flex items-center gap-1 text-energy-600"><Check className="h-3 w-3" /> con acceso</span>
-                    ) : status === 'disabled' ? (
-                      <span className="inline-flex items-center gap-1 text-coral-600"><X className="h-3 w-3" /> sin acceso</span>
-                    ) : (
-                      <span className="text-amber-600">pendiente de pago</span>
-                    )}
-                  </p>
-                </div>
-
-                {isAdminRow ? (
-                  <span className="ng-pill ng-pill-idle">
-                    Acceso permanente
-                  </span>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={busyId === row.id || hasAccess}
-                      onClick={() => void grantAccess(row.id)}
-                      className="ng-btn-primary disabled:opacity-40"
-                    >
-                      Dar acceso
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busyId === row.id || !hasAccess}
-                      onClick={() => void revokeAccess(row.id)}
-                      className="ng-btn-ghost text-coral-600 disabled:opacity-40"
-                    >
-                      Quitar acceso
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {rows.map((row) => (
+          <UserAccessCard
+            key={row.id}
+            row={row}
+            selfId={user?.id}
+            busy={busyId === row.id}
+            durationDraft={draftFor(row.id)}
+            onDurationDraftChange={(days) => setDraft(row.id, days)}
+            onGrant={() => void grant(row.id, draftFor(row.id))}
+            onRevoke={() => void revoke(row.id)}
+            onResetPassword={() => void resetPassword(row.id)}
+            onDelete={() => void remove(row.id)}
+          />
+        ))}
         {rows.length === 0 && !error ? (
           <p className="rounded-2xl bg-white px-4 py-8 text-center text-sm text-slate-400 ring-1 ring-slate-200/80">
-            Aún no hay perfiles. Cuando alguien se registre, aparece aquí.
+            Aún no hay perfiles. Crea uno arriba o espera a que alguien se registre.
           </p>
         ) : null}
       </div>
