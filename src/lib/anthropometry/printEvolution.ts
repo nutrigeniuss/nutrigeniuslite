@@ -33,6 +33,7 @@ import {
 import { buildGrowthChartSVG } from './growthChartSvg';
 import type { Sex } from './types';
 import { getCurrentLocale } from '@/lib/formatLocale';
+import { openHtmlPrintPreview } from '@/lib/htmlPrintPreview';
 
 // El modelo de 5C (Kerr) y el somatotipo (Heath-Carter) aplican desde los 6 años.
 const ANTHRO_MODEL_MIN_MONTHS = 72;
@@ -712,48 +713,14 @@ function buildHtml({ patient, measurements, brand = 'NutriGenius', brandLogoUrl 
 }
 
 /**
- * Lanza la impresión del reporte de evolución (iframe oculto + auto-print).
- * Devuelve true si se pudo iniciar el flujo de impresión.
+ * Abre la vista previa del reporte de evolución (cerrar / imprimir PDF).
+ * Devuelve true si se pudo mostrar la vista previa.
  */
 export function printEvolutionReport(input: PrintEvolutionInput): boolean {
   const html = buildHtml(input);
-  try {
-    const previous = document.getElementById('nutrigenius-evolucion-print-frame');
-    if (previous) previous.remove();
-
-    const iframe = document.createElement('iframe');
-    iframe.id = 'nutrigenius-evolucion-print-frame';
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.srcdoc = html;
-    document.body.appendChild(iframe);
-
-    iframe.addEventListener('load', () => {
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch {
-          /* silencioso */
-        }
-      }, 250);
-    });
-    return true;
-  } catch {
-    // Fallback: descargar como HTML.
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `evolucion-antropometrica.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
-    return false;
-  }
+  return openHtmlPrintPreview({
+    html,
+    title: 'Vista previa · Evolución antropométrica',
+    downloadName: 'evolucion-antropometrica.html',
+  });
 }

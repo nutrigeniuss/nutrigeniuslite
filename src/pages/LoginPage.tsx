@@ -33,14 +33,14 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
       <Link to="/" className="mb-8 inline-flex items-center gap-2 self-start">
         <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-coral-500 text-sm font-bold text-white">N</span>
-        <span className="ng-display text-lg font-semibold text-slate-950">NutriGenius Lite</span>
+        <span className="ng-brand text-lg">NutriGenius Lite</span>
       </Link>
 
-      <div className="rounded-[1.75rem] border border-white/80 bg-white p-6 shadow-[0_16px_50px_rgba(15,23,42,0.08)] sm:p-8">
-        <h1 className="ng-display text-2xl font-semibold text-slate-950">
+      <div className="ng-card p-6 sm:p-8">
+        <h1 className="ng-page-title">
           {mode === 'in' ? 'Entrar' : 'Crear cuenta'}
         </h1>
-        <p className="mt-1 text-sm text-slate-400">Acceso simple a la calculadora</p>
+        <p className="ng-muted mt-1">Acceso a la calculadora</p>
 
         {!configured ? (
           <p className="mt-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">

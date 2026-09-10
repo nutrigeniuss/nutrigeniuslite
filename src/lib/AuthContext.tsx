@@ -33,7 +33,11 @@ async function fetchProfile(userId: string): Promise<ProfileRow | null> {
     .select('id, email, full_name, role, access_mode, access_expires_at, is_active')
     .eq('id', userId)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) {
+    console.error('[Lite] profiles fetch failed', error.message);
+    return null;
+  }
+  if (!data) return null;
   return {
     id: data.id,
     email: data.email,

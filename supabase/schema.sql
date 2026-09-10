@@ -1,5 +1,6 @@
 -- NutriGenius Lite (calculadora) — esquema mínimo
 -- Pegar en SQL Editor del proyecto Supabase dedicado.
+-- Idempotente: se puede re-ejecutar.
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -41,28 +42,41 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- Lectura: cada usuario su perfil; admin ve todos.
+-- Evita recursión RLS al chequear admin (security definer).
+create or replace function public.is_lite_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and (p.role = 'admin' or p.access_mode = 'internal_admin')
+  );
+$$;
+
+drop policy if exists "profiles_select_own_or_admin" on public.profiles;
 create policy "profiles_select_own_or_admin"
   on public.profiles for select
-  using (
-    auth.uid() = id
-    or exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and (p.role = 'admin' or p.access_mode = 'internal_admin')
-    )
-  );
+  using (auth.uid() = id or public.is_lite_admin());
 
--- Update: solo admin (activar/desactivar).
+drop policy if exists "profiles_update_admin" on public.profiles;
 create policy "profiles_update_admin"
   on public.profiles for update
-  using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and (p.role = 'admin' or p.access_mode = 'internal_admin')
-    )
-  );
+  using (public.is_lite_admin());
 
 -- Tras el primer registro, promover admin manualmente:
 -- update public.profiles
 -- set role = 'admin', access_mode = 'internal_admin', is_active = true
 -- where email = 'tu@correo.com';
+--
+-- Si no existe fila en profiles, créala desde auth:
+-- insert into public.profiles (id, email, full_name, role, access_mode, is_active)
+-- select id, email, coalesce(raw_user_meta_data->>'full_name', ''), 'admin', 'internal_admin', true
+-- from auth.users
+-- where email = 'tu@correo.com'
+-- on conflict (id) do update
+-- set role = 'admin', access_mode = 'internal_admin', is_active = true;

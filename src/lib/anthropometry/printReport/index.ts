@@ -65,6 +65,7 @@ import { buildPerimeterAndSkinfoldSections } from './perimetrosYPliegues';
 import { buildCompositionSections } from './composicion';
 import { REPORT_CSS } from './styles';
 import { getCurrentLocale } from '@/lib/formatLocale';
+import { openHtmlPrintPreview } from '@/lib/htmlPrintPreview';
 
 interface PrintReportInput {
   patient: AnyRecord;
@@ -325,58 +326,15 @@ export function buildHtml({ patient, measurement, brand = 'NutriGenius', brandLo
 </html>`;
 }
 
-/** Abre una ventana imprimible con el reporte. Devuelve true si se pudo abrir. */
+/**
+ * Abre la vista previa del reporte (cerrar / imprimir PDF).
+ * Devuelve true si se pudo mostrar la vista previa.
+ */
 export function printConsultReport(input: PrintReportInput): boolean {
   const html = buildHtml(input);
-
-  // Estrategia primaria: iframe oculto en la MISMA página.
-  // Es la opción más robusta porque:
-  //  • No depende de pop-ups (Edge/Chrome los bloquean por defecto).
-  //  • No requiere `document.write` (deprecado y bloqueado en algunas versiones).
-  //  • El diálogo de impresión sale instantáneamente sin tabs en blanco.
-  try {
-    // Limpiamos cualquier iframe previo de impresión para evitar acumulación.
-    const previous = document.getElementById('nutrigenius-print-frame');
-    if (previous) previous.remove();
-
-    const iframe = document.createElement('iframe');
-    iframe.id = 'nutrigenius-print-frame';
-    // Posicionado fuera de pantalla; no lo ocultamos con display:none porque
-    // algunos navegadores no imprimen iframes ocultos.
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    // srcdoc carga el HTML completo dentro del iframe sin tocar el documento
-    // padre y respeta el CSS @page / @media print embebido.
-    iframe.srcdoc = html;
-    document.body.appendChild(iframe);
-
-    iframe.addEventListener('load', () => {
-      // Pequeño delay para que el navegador termine de aplicar estilos.
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch {
-          /* silencioso: si falla, el usuario puede usar Ctrl+P manual */
-        }
-      }, 250);
-    });
-    return true;
-  } catch {
-    // Fallback final: descarga el HTML como archivo si nada funcionó.
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte-antropometrico.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
-    return false;
-  }
+  return openHtmlPrintPreview({
+    html,
+    title: 'Vista previa · Informe antropométrico',
+    downloadName: 'reporte-antropometrico.html',
+  });
 }
