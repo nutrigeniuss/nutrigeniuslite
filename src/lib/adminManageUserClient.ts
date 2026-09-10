@@ -7,7 +7,16 @@ async function invokeAdminManageUser<T>(body: Record<string, unknown>): Promise<
   if (!supabase) throw new Error('Supabase no configurado');
   const { data, error } = await supabase.functions.invoke('admin-manage-user', { body });
   if (error) {
-    const msg = error.message || 'No se pudo contactar admin-manage-user (¿deploy pendiente?)';
+    let msg = error.message || 'No se pudo contactar admin-manage-user (¿deploy pendiente?)';
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.json === 'function') {
+      try {
+        const body = (await ctx.json()) as FnErrorBody;
+        if (body?.error) msg = String(body.error);
+      } catch {
+        // keep transport message
+      }
+    }
     throw new Error(msg);
   }
   const payload = data as FnErrorBody & T;
