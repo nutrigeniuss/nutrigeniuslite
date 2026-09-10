@@ -61,4 +61,26 @@ describe('parseOfficialFoodsRows', () => {
     expect(result.foods).toHaveLength(0);
     expect(result.skippedRows).toBe(1);
   });
+
+  it('throws if calorias column missing', () => {
+    expect(() =>
+      parseOfficialFoodsRows([
+        ['categoria', 'alimento', 'proteinas'],
+        ['CAT', 'Arroz', '2'],
+      ]),
+    ).toThrow(/calorias/i);
+  });
+
+  it('keeps missing macros as null after scaling', () => {
+    const result = parseOfficialFoodsRows([
+      ['alimento', 'calorias', 'proteinas', 'carbohidratos', 'grasas', 'gramos o ml de la medida casera'],
+      ['Arroz parcial', '130', null, null, '0.3', '100'],
+    ]);
+    expect(result.foods).toHaveLength(1);
+    const food = result.foods[0];
+    expect(food.calories).toBeCloseTo(130, 1);
+    expect(food.protein).toBeNull();
+    expect(food.carbs).toBeNull();
+    expect(food.fat).toBeCloseTo(0.3, 1);
+  });
 });

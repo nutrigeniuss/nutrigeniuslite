@@ -1,7 +1,7 @@
 import { supabase } from '@/api/supabaseClient';
-import { normalizeFoodCategory } from '@/lib/foodCategories';
 import { logger } from '@/lib/logger';
 import { paginateAll } from '@/lib/supabaseBatch';
+import { buildPersistedMasterRow } from './buildPersistedMasterRow';
 import type { OfficialFoodImportRecord } from './parseOfficialFoodsWorkbook';
 
 const IMPORT_FOOD_BATCH_SIZE = 100;
@@ -67,22 +67,6 @@ const isFoodMeasureTableMissingError = (error: unknown): boolean => {
     && /(does not exist|42P01|Could not find the table|schema cache)/i.test(message);
 };
 
-const cleanNutrientsMap = (
-  nutrients: Record<string, number | null> | undefined,
-): Record<string, number | null> => {
-  if (!nutrients) {
-    return {};
-  }
-
-  return Object.entries(nutrients).reduce<Record<string, number | null>>((accumulator, [key, value]) => {
-    if (value == null || !Number.isFinite(value)) {
-      return accumulator;
-    }
-    accumulator[key] = value;
-    return accumulator;
-  }, {});
-};
-
 const normalizeHouseholdMeasures = (
   measures: OfficialFoodImportRecord['household_measures'] | undefined,
 ): HouseholdMeasureInput[] => {
@@ -135,59 +119,6 @@ const mergeIncomingRecords = (
       sort_order: index,
     })),
   };
-};
-
-const buildPersistedMasterRow = (
-  record: OfficialFoodImportRecord,
-  options?: ImportMasterFoodsBatchOptions,
-): Record<string, unknown> => {
-  const nutrients = cleanNutrientsMap(record.nutrients);
-
-  if (record.fiber != null && Number.isFinite(record.fiber)) {
-    nutrients.fiber = record.fiber;
-  }
-  if (record.sodium != null && Number.isFinite(record.sodium)) {
-    nutrients.sodium = record.sodium;
-  }
-  if (record.available_carbs != null && Number.isFinite(record.available_carbs)) {
-    nutrients.available_carbs = record.available_carbs;
-  }
-
-  const householdMeasures = normalizeHouseholdMeasures(record.household_measures);
-  const carbs = Number.isFinite(record.carbs) ? record.carbs : (nutrients.available_carbs ?? null);
-  const category = normalizeFoodCategory(record.category);
-
-  const row: Record<string, unknown> = {
-    nutritionist_id: null,
-    review_status: 'approved',
-    published_at: new Date().toISOString(),
-    name: record.name.trim(),
-    category: category || null,
-    country: 'PE',
-    portion_grams: 100,
-    calories: Number.isFinite(record.calories) ? record.calories : null,
-    protein: Number.isFinite(record.protein) ? record.protein : null,
-    carbs,
-    fat: Number.isFinite(record.fat) ? record.fat : null,
-    notes: record.notes?.trim() || null,
-    household_measures: householdMeasures,
-    nutrients,
-    fiber: nutrients.fiber ?? null,
-    sodium: nutrients.sodium ?? null,
-    available_carbs: nutrients.available_carbs ?? null,
-    alcohol: nutrients.alcohol ?? null,
-    ash: nutrients.ashes ?? null,
-    caffeine: nutrients.caffeine ?? null,
-    calcium: nutrients.calcium ?? null,
-    alpha_carotene: nutrients.alpha_carotene ?? null,
-    beta_carotene: nutrients.beta_carotene ?? null,
-  };
-
-  if (options?.submittedByUserId) {
-    row.submitted_by_nutritionist_id = options.submittedByUserId;
-  }
-
-  return row;
 };
 
 const loadExistingMastersByName = async (): Promise<Map<string, MasterFoodNameRow>> => {

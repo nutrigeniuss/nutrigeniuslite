@@ -148,7 +148,12 @@ const CORE_FIELD_ALIASES: Record<string, OfficialExcelField> = {
 };
 
 function buildOfficialExcelFieldMap(): Record<string, OfficialExcelField> {
-  const map: Record<string, OfficialExcelField> = { ...CORE_FIELD_ALIASES };
+  const map: Record<string, OfficialExcelField> = {};
+
+  for (const [label, field] of Object.entries(CORE_FIELD_ALIASES)) {
+    map[normalizeExcelHeader(label)] = field;
+    map[normalizeExcelHeader(stripLabelUnit(label))] = field;
+  }
 
   for (const [label, key] of NUTRIENT_HEADER_ALIASES) {
     const nutrientField = `nutrient:${key}` as OfficialExcelField;
@@ -167,5 +172,9 @@ export function resolveOfficialExcelField(header: unknown): OfficialExcelField |
     return null;
   }
 
-  return OFFICIAL_EXCEL_FIELD_BY_HEADER[normalized] ?? null;
+  return (
+    OFFICIAL_EXCEL_FIELD_BY_HEADER[normalized]
+    ?? OFFICIAL_EXCEL_FIELD_BY_HEADER[normalizeExcelHeader(stripLabelUnit(normalized))]
+    ?? null
+  );
 }

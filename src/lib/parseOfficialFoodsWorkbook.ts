@@ -8,10 +8,10 @@ export type OfficialFoodImportRecord = {
   category: string | null;
   country: 'PE';
   portion_grams: 100;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
   notes: string | null;
   household_measures: Array<{
     name: string;
@@ -213,10 +213,10 @@ function scaleNutrients(
   const sodium = nutrients.sodium ?? null;
 
   return {
-    calories: scaleValue(parsed.calories) ?? 0,
-    protein: scaleValue(parsed.protein) ?? 0,
-    carbs: scaleValue(parsed.carbs) ?? 0,
-    fat: scaleValue(parsed.fat) ?? 0,
+    calories: scaleValue(parsed.calories),
+    protein: scaleValue(parsed.protein),
+    carbs: scaleValue(parsed.carbs),
+    fat: scaleValue(parsed.fat),
     available_carbs: scaleValue(parsed.availableCarbs),
     nutrients,
     fiber,
@@ -311,6 +311,10 @@ export function parseOfficialFoodsRows(rows: unknown[][]): OfficialFoodsParseRes
 
   if (fieldMap.name === undefined) {
     throw new Error('Falta la columna alimento en la plantilla.');
+  }
+
+  if (fieldMap.calories === undefined) {
+    throw new Error('Falta la columna calorias en la plantilla.');
   }
 
   let dataStartIndex = 1;

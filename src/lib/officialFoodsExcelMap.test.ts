@@ -23,6 +23,16 @@ describe('resolveOfficialExcelField', () => {
     expect(resolveOfficialExcelField('notas')).toBe('notes');
   });
 
+  it('maps core macro headers with unit suffixes', () => {
+    expect(resolveOfficialExcelField('Calorías (kcal)')).toBe('calories');
+    expect(resolveOfficialExcelField('Proteínas (g)')).toBe('protein');
+    expect(resolveOfficialExcelField('Carbohidratos (g)')).toBe('carbs');
+    expect(resolveOfficialExcelField('Carbohidratos totales (g)')).toBe('carbs');
+    expect(resolveOfficialExcelField('Carbohidratos disponibles (g)')).toBe('available_carbs');
+    expect(resolveOfficialExcelField('Grasas (g)')).toBe('fat');
+    expect(resolveOfficialExcelField('Grasas total (g)')).toBe('fat');
+  });
+
   it('maps micronutrients to nutrient keys', () => {
     expect(resolveOfficialExcelField('Agua')).toBe('nutrient:water');
     expect(resolveOfficialExcelField('fibra')).toBe('nutrient:fiber');
