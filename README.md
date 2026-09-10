@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# NutriGenius Lite (calculadora)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Producto nuevo, **aparte** de `nutrigenius-lite` (SaaS/ficha).  
+Nombre comercial: **NutriGenius Lite**. Carpeta: `nutrigenius-lite-calc`.
 
-Currently, two official plugins are available:
+## Qué es
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Landing en una pantalla (marca + funciones)
+- Login Fitia simple (email/contraseña)
+- Calculadora: Medidas · Resultados · Calorías
+- Módulo maestro `/admin` para activar/desactivar acceso
+- **Sin** pacientes, dietas ni recetas
 
-## React Compiler
+## Arranque
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+cd C:\NUTRIGENIUS\LITE\nutrigenius-lite-calc
+copy .env.example .env.local
+# Edita .env.local con tu proyecto Supabase
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+1. Crea un proyecto Supabase (puede ser el Lite que ya tienes o uno nuevo).
+2. Ejecuta `supabase/schema.sql` en el SQL Editor.
+3. Regístrate en `/login`.
+4. En SQL, promueve tu usuario a admin (comentario al final del schema).
+5. En `/admin` activa cuentas tras el pago Yape.
+
+## Pago
+
+Edita `src/config/litePayment.ts` con Yape/CCI reales.
+
+## Relación con el otro repo
+
+| Carpeta | Rol |
+|---------|-----|
+| `nutrigenius-lite` | App clínica completa (pacientes, etc.) — **no borrar** |
+| `nutrigenius-lite-calc` | Calculadora rápida para salir al mercado |
