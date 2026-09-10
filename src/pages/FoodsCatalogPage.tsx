@@ -5,6 +5,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { clearFoodCatalogCache } from '@/lib/foodCatalogCache';
 import { FOODS_JSON_EXAMPLE } from '@/lib/localFoodCatalog';
+import { parseOfficialFoodsWorkbook } from '@/lib/readOfficialFoodsXlsx';
+import { importMasterFoodsBatch } from '@/lib/importMasterFoodsBatch';
 
 type FoodRow = {
   id: string;
@@ -26,6 +28,7 @@ export default function FoodsCatalogPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!supabase) {
@@ -65,11 +68,41 @@ export default function FoodsCatalogPage() {
     );
   }
 
+  const onImportXlsx = async (file: File) => {
+    if (!user?.id) return;
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    setProgress(null);
+    try {
+      const { foods: parsedFoods, skippedRows } = await parseOfficialFoodsWorkbook(file);
+      if (parsedFoods.length === 0) {
+        throw new Error('No se encontraron alimentos en el Excel.');
+      }
+      const { insertedCount, updatedCount } = await importMasterFoodsBatch(parsedFoods, {
+        submittedByUserId: user.id,
+        onProgress: (done, total) => {
+          setProgress(`Guardando ${done}/${total}…`);
+        },
+      });
+      await load();
+      setMessage(
+        `${parsedFoods.length} alimentos · ${insertedCount} nuevos · ${updatedCount} actualizados · ${skippedRows} filas omitidas`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo importar el Excel');
+    } finally {
+      setBusy(false);
+      setProgress(null);
+    }
+  };
+
   const onImportFile = async (file: File, mode: 'replace' | 'merge') => {
     if (!supabase || !user?.id) return;
     setBusy(true);
     setError(null);
     setMessage(null);
+    setProgress(null);
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
@@ -158,6 +191,30 @@ export default function FoodsCatalogPage() {
       {error ? <p className="mb-3 rounded-2xl bg-coral-50 px-4 py-3 text-sm text-coral-600">{error}</p> : null}
 
       <section className="ng-card mb-5 p-4 sm:p-5">
+        <p className="ng-section-title">Importar Excel (plantilla oficial)</p>
+        <p className="ng-muted mt-1">
+          Misma plantilla del SaaS. Filas repetidas = medidas caseras. Si el nombre ya existe se reemplaza; si no, se agrega.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <label className={`ng-btn-primary cursor-pointer ${busy ? 'opacity-50' : ''}`}>
+            <Upload className="h-3.5 w-3.5" /> Subir .xlsx
+            <input
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              disabled={busy}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void onImportXlsx(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+        </div>
+        {progress ? <p className="ng-muted mt-2">{progress}</p> : null}
+      </section>
+
+      <section className="ng-card mb-5 p-4 sm:p-5">
         <p className="ng-section-title">Importar JSON</p>
         <p className="ng-muted mt-1">
           name, calories, protein, carbs, fat, portion_grams, category (opcional).
@@ -196,7 +253,7 @@ export default function FoodsCatalogPage() {
                   {food.category || 'Sin categoría'} · {food.portion_grams || 100}g · {food.calories || 0} kcal · P{food.protein || 0} C{food.carbs || 0} G{food.fat || 0}
                 </p>
               </div>
-              <button type="button" className="rounded-full p-2 text-coral-500 hover:bg-white" onClick={() => void removeFood(food)} aria-label={`Eliminar ${food.name}`}>
+              <button type="button" className="rounded-full p-2 text-coral-500 hover:bg-white disabled:opacity-50" disabled={busy} onClick={() => void removeFood(food)} aria-label={`Eliminar ${food.name}`}>
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
