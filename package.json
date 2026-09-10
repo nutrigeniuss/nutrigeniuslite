@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run src/lib/adminAccess.test.ts",
+    "test:admin": "vitest run src/lib/adminAccess.test.ts"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
         return new Date(Date.now() + 1000 * 60 * 60 * 24 * accessDays).toISOString()
       })()
 
-      await admin.from('profiles').upsert({
+      const { error: upsertError } = await admin.from('profiles').upsert({
         id: created.user.id,
         email,
         full_name: fullName,
@@ -114,6 +114,22 @@ Deno.serve(async (req) => {
         is_active: grant,
         access_expires_at: accessExpiresAt,
       })
+
+      if (upsertError) {
+        const { error: deleteError } = await admin.auth.admin.deleteUser(created.user.id)
+        if (deleteError) {
+          console.error('Rollback deleteUser failed after profile upsert error:', deleteError.message)
+        }
+        return json(
+          {
+            error: upsertError.message || 'No se pudo guardar el perfil',
+            ...(deleteError
+              ? { rollback: `No se pudo revertir el usuario creado: ${deleteError.message}` }
+              : {}),
+          },
+          400,
+        )
+      }
 
       return json({ ok: true, userId: created.user.id })
     }
