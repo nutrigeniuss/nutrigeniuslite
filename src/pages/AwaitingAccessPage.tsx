@@ -11,17 +11,25 @@ export default function AwaitingAccessPage() {
       <div className="rounded-[1.75rem] border border-white/80 bg-white p-7 shadow-[0_16px_50px_rgba(15,23,42,0.08)]">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-500">NutriGenius Lite</p>
         <h1 className="ng-display mt-2 text-2xl font-semibold text-slate-950">
-          {disabled ? 'Acceso desactivado' : 'Activa tu acceso'}
+          {disabled ? 'Activa tu cuenta' : 'Activa tu acceso'}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-500">
           {disabled
-            ? 'Tu cuenta fue desactivada. Escribe por WhatsApp si crees que es un error.'
-            : `Hola${profile?.full_name ? `, ${profile.full_name}` : ''}. Paga ${LITE_PAYMENT.priceLabel} por Yape (${LITE_PAYMENT.yapePhone}) a nombre de ${LITE_PAYMENT.holderName}. Luego te activamos desde el módulo maestro.`}
+            ? `Hola${profile?.full_name ? `, ${profile.full_name}` : ''}. Activa tu cuenta con un plan desde S/ 30 (Yape ${LITE_PAYMENT.yapePhone}) a nombre de ${LITE_PAYMENT.holderName}.`
+            : `Hola${profile?.full_name ? `, ${profile.full_name}` : ''}. Elige un plan desde S/ 30 por Yape (${LITE_PAYMENT.yapePhone}) a nombre de ${LITE_PAYMENT.holderName}.`}
         </p>
 
         <div className="mt-5 space-y-2 rounded-2xl bg-[#f7f8fc] p-4 text-sm text-slate-600">
           <p><span className="font-semibold text-slate-800">Yape:</span> {LITE_PAYMENT.yapePhone}</p>
-          <p><span className="font-semibold text-slate-800">CCI:</span> {LITE_PAYMENT.cci}</p>
+          <p>
+            <span className="font-semibold text-slate-800">BCP Soles:</span>{' '}
+            <span className="font-mono tabular-nums">{LITE_PAYMENT.bcpAccount}</span>
+          </p>
+          <p>
+            <span className="font-semibold text-slate-800">CCI:</span>{' '}
+            <span className="font-mono tabular-nums text-[13px]">{LITE_PAYMENT.cci}</span>
+          </p>
+          <p className="text-xs text-slate-400">A nombre de {LITE_PAYMENT.holderName}</p>
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">

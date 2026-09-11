@@ -1,6 +1,16 @@
 import { useId } from 'react';
 
-export default function BrandLogo({ className = '', alt, compact = false }: { className?: string; alt?: string; compact?: boolean }) {
+type BrandLogoProps = {
+  className?: string;
+  alt?: string;
+  compact?: boolean;
+  /** md = default app chrome; lg = landing / hero */
+  size?: 'md' | 'lg';
+  /** Muestra la pastilla "Lite" junto al nombre (landing). */
+  showLite?: boolean;
+};
+
+export default function BrandLogo({ className = '', alt, compact = false, size = 'md', showLite = false }: BrandLogoProps) {
   // useId da ids únicos por instancia: BrandLogo puede renderizarse dos veces en
   // la misma página (sidebar + top bar móvil) y los ids de gradiente/filtro no
   // deben colisionar (si colisionan, el segundo logo pierde el degradado).
@@ -8,10 +18,15 @@ export default function BrandLogo({ className = '', alt, compact = false }: { cl
   const bodyGrad = `bg-${uid}`;
   const heartGrad = `hg-${uid}`;
   const shadow = `sh-${uid}`;
+  const iconClass = size === 'lg' ? 'h-14 w-auto flex-shrink-0 sm:h-16' : 'h-9 w-auto flex-shrink-0';
+  const wordClass = size === 'lg'
+    ? 'text-3xl sm:text-4xl tracking-tight leading-none'
+    : 'text-xl tracking-tight leading-none';
+  const gapClass = size === 'lg' ? 'gap-3' : 'gap-2';
 
   return (
-    <div className={`flex items-center gap-2 select-none ${className}`} aria-label={alt ?? 'NutriGenius'}>
-      <svg viewBox="0 0 48 48" className="h-9 w-auto flex-shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <div className={`flex items-center ${gapClass} select-none ${className}`} aria-label={alt ?? 'NutriGenius'}>
+      <svg viewBox="0 0 48 48" className={iconClass} fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <defs>
           <linearGradient id={bodyGrad} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#ff7a6d" />
@@ -43,9 +58,20 @@ export default function BrandLogo({ className = '', alt, compact = false }: { cl
         />
       </svg>
       {compact ? null : (
-        <div>
-          <span className="font-black text-xl tracking-tight leading-none" style={{ color: '#ff5c57' }}>Nutri</span>
-          <span className="font-semibold text-xl tracking-tight leading-none" style={{ color: '#3b5feb' }}>Genius</span>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <div>
+            <span className={`font-black ${wordClass}`} style={{ color: '#ff5c57' }}>Nutri</span>
+            <span className={`font-semibold ${wordClass}`} style={{ color: '#3b5feb' }}>Genius</span>
+          </div>
+          {showLite ? (
+            <span
+              className={`rounded-full bg-brand-50 font-bold uppercase tracking-[0.14em] text-brand-500 ${
+                size === 'lg' ? 'px-2.5 py-1 text-[11px] sm:text-xs' : 'px-2 py-0.5 text-[10px]'
+              }`}
+            >
+              Lite
+            </span>
+          ) : null}
         </div>
       )}
     </div>
