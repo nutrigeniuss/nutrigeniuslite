@@ -163,10 +163,10 @@ export default function LabEntryDetail({
   inputRefs.current = [];
 
   return (
-    <div className="w-full">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <BackLink onClick={handleBack} label="Volver a Bioquímica" />
+    <div className="w-full min-w-0">
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <BackLink onClick={handleBack} label="Volver a Bioquímica" className="self-start" />
           <div className="min-w-0">
             <h2 className="text-base font-bold leading-tight text-slate-900 sm:text-[1.05rem]">
               {formatLongDate(data.date)}
@@ -179,15 +179,15 @@ export default function LabEntryDetail({
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto sm:items-center">
+          <label className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-initial sm:flex-row sm:items-center sm:gap-2">
             <span className="ng-label !mb-0">Laboratorio</span>
             <input
               type="text"
               value={data.lab ?? ''}
               onChange={(event) => setData((current) => ({ ...current, lab: event.target.value }))}
               placeholder="Opcional"
-              className="ng-input !mt-0 w-40 sm:w-56"
+              className="ng-input !mt-0 w-full sm:w-56"
             />
           </label>
           <button
@@ -205,7 +205,7 @@ export default function LabEntryDetail({
               }
             }}
             title={totals.filled === 0 ? 'Carga algún análisis para generar el reporte' : 'Generar PDF de esta toma'}
-            className="ng-btn-ghost disabled:cursor-not-allowed disabled:opacity-40"
+            className="ng-btn-ghost shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <FileText className="h-4 w-4" />
             PDF
@@ -213,8 +213,8 @@ export default function LabEntryDetail({
         </div>
       </div>
 
-      <div className="flex flex-col overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.04)] lg:flex-row">
-        <div className="flex w-full flex-shrink-0 gap-1 overflow-x-auto border-b border-slate-100 bg-[#fafbfd] p-2.5 lg:w-64 lg:flex-col lg:overflow-visible lg:border-b-0 lg:border-r lg:p-3.5">
+      <div className="flex min-w-0 flex-col overflow-hidden rounded-[1.25rem] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.04)] sm:rounded-[1.5rem] lg:flex-row">
+        <div className="flex w-full flex-shrink-0 gap-1.5 overflow-x-auto border-b border-slate-100 bg-[#fafbfd] p-2.5 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch] lg:w-64 lg:flex-col lg:overflow-visible lg:border-b-0 lg:border-r lg:p-3.5">
           {PANELS.map((item) => {
             const isActive = item.key === activePanel;
             const filled = countPanelFilled(item, values);
@@ -224,7 +224,7 @@ export default function LabEntryDetail({
                 key={item.key}
                 type="button"
                 onClick={() => setActivePanel(item.key)}
-                className={`flex flex-shrink-0 items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold transition-all lg:w-full lg:flex-shrink ${
+                className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition-all sm:gap-2.5 sm:px-3.5 sm:text-sm lg:w-full lg:flex-shrink ${
                   isActive
                     ? 'bg-brand-500 text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]'
                     : 'text-slate-500 hover:bg-white hover:text-slate-800'
@@ -249,7 +249,7 @@ export default function LabEntryDetail({
           <button
             type="button"
             onClick={() => setActivePanel(INDICES_KEY)}
-            className={`flex flex-shrink-0 items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold transition-all lg:w-full lg:flex-shrink ${
+            className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition-all sm:gap-2.5 sm:px-3.5 sm:text-sm lg:w-full lg:flex-shrink ${
               showingIndices
                 ? 'bg-brand-500 text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]'
                 : 'text-slate-500 hover:bg-white hover:text-slate-800'
@@ -263,7 +263,7 @@ export default function LabEntryDetail({
           </button>
         </div>
 
-        <div className="min-w-0 flex-1 overflow-x-auto">
+        <div className="min-w-0 flex-1 overflow-x-hidden">
           {showingIndices ? (
             <LabIndicesPanel
               results={indices}
@@ -274,8 +274,8 @@ export default function LabEntryDetail({
             />
           ) : (
             <>
-          <div className="p-5 sm:p-6 lg:p-7">
-            <div className="mb-5 flex items-center gap-2">
+          <div className="p-4 sm:p-6 lg:p-7">
+            <div className="mb-4 flex flex-wrap items-center gap-2 sm:mb-5">
               <span className="h-4 w-1 rounded-full bg-brand-500" />
               <h4 className="ng-section-title uppercase tracking-widest">{panel.label}</h4>
               {countPanelOutOfRange(panel, values, sex, accountRanges, entryRanges) > 0 ? (
@@ -285,38 +285,63 @@ export default function LabEntryDetail({
               ) : null}
             </div>
 
-            <table className="w-full table-fixed">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="pb-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Análisis</th>
-                  <th className="w-[132px] pb-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-slate-400 sm:w-[188px]">Valor</th>
-                  <th className="w-[96px] pb-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-slate-400 sm:w-[140px]">Rango</th>
-                </tr>
-              </thead>
-              <tbody>
-                {panel.analytes.map((analyte, index) => {
-                  const { range, source } = resolveRange(analyte, sex, accountRanges, entryRanges);
-                  const overrideTarget = analyte.refBySex && sex ? `${analyte.key}:${sex}` : analyte.key;
-                  return (
-                    <LabValueRow
-                      key={analyte.key}
-                      analyte={analyte}
-                      value={(values[analyte.key] as number | string | null) ?? null}
-                      onChange={(next) => setValue(analyte.key, next)}
-                      range={range}
-                      source={source}
-                      onSaveEntryRange={(next) => setEntryRange(overrideTarget, next)}
-                      onSaveAccountRange={(next) => onSaveAccountRange(overrideTarget, next)}
-                      inputRef={(element) => { inputRefs.current[index] = element; }}
-                      onEnter={() => focusNext(index)}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
+            {/* Móvil: filas apiladas. Desktop: tabla. */}
+            <div className="space-y-3 sm:hidden">
+              {panel.analytes.map((analyte, index) => {
+                const { range, source } = resolveRange(analyte, sex, accountRanges, entryRanges);
+                const overrideTarget = analyte.refBySex && sex ? `${analyte.key}:${sex}` : analyte.key;
+                return (
+                  <LabValueRow
+                    key={analyte.key}
+                    layout="stack"
+                    analyte={analyte}
+                    value={(values[analyte.key] as number | string | null) ?? null}
+                    onChange={(next) => setValue(analyte.key, next)}
+                    range={range}
+                    source={source}
+                    onSaveEntryRange={(next) => setEntryRange(overrideTarget, next)}
+                    onSaveAccountRange={(next) => onSaveAccountRange(overrideTarget, next)}
+                    inputRef={(element) => { inputRefs.current[index] = element; }}
+                    onEnter={() => focusNext(index)}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="hidden sm:block">
+              <table className="w-full table-fixed">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="pb-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Análisis</th>
+                    <th className="w-[160px] pb-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-slate-400 md:w-[188px]">Valor</th>
+                    <th className="w-[120px] pb-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-slate-400 md:w-[140px]">Rango</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {panel.analytes.map((analyte, index) => {
+                    const { range, source } = resolveRange(analyte, sex, accountRanges, entryRanges);
+                    const overrideTarget = analyte.refBySex && sex ? `${analyte.key}:${sex}` : analyte.key;
+                    return (
+                      <LabValueRow
+                        key={analyte.key}
+                        analyte={analyte}
+                        value={(values[analyte.key] as number | string | null) ?? null}
+                        onChange={(next) => setValue(analyte.key, next)}
+                        range={range}
+                        source={source}
+                        onSaveEntryRange={(next) => setEntryRange(overrideTarget, next)}
+                        onSaveAccountRange={(next) => onSaveAccountRange(overrideTarget, next)}
+                        inputRef={(element) => { inputRefs.current[index] = element; }}
+                        onEnter={() => focusNext(index)}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-[#f7f8ff] px-5 py-4 sm:px-6 lg:px-7">
+          <div className="flex flex-col gap-3 border-t border-slate-100 bg-[#f7f8ff] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-7">
             <p className="text-xs text-slate-400">
               {panel.analytes.length} análisis en este panel. Completa solo los que reporte el laboratorio.
             </p>
@@ -330,7 +355,7 @@ export default function LabEntryDetail({
                   return { ...current, values: nextValues };
                 });
               }}
-              className="ng-btn-ghost hover:border-rose-200 hover:text-rose-500"
+              className="ng-btn-ghost self-start hover:border-rose-200 hover:text-rose-500 sm:self-auto"
             >
               <Eraser className="h-3.5 w-3.5" />
               Limpiar panel

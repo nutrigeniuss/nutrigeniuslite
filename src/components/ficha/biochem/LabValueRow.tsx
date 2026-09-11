@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ArrowDown, ArrowUp, HelpCircle, Pencil, RotateCcw } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -25,10 +25,10 @@ type LabValueRowProps = {
   onSaveAccountRange: (range: LabRange | null) => void;
   inputRef?: (element: HTMLInputElement | HTMLSelectElement | null) => void;
   onEnter?: () => void;
+  /** `stack` = tarjeta móvil; `row` = fila de tabla (default). */
+  layout?: 'row' | 'stack';
 };
 
-// Paleta por estado. El valor fuera de rango se lee por color Y por ícono de
-// dirección: el color solo no basta para quien no distingue rojo de verde.
 const STATUS_STYLES: Record<Exclude<LabStatus, null>, { box: string; text: string; unit: string }> = {
   high: { box: 'border-red-300 bg-red-50/70', text: 'text-red-600', unit: 'text-red-400' },
   low: { box: 'border-sky-300 bg-sky-50/70', text: 'text-sky-700', unit: 'text-sky-400' },
@@ -64,8 +64,6 @@ function RangeEditor({
   const [max, setMax] = useState(range?.max != null ? String(range.max) : '');
   const [scope, setScope] = useState<'entry' | 'account'>(source === 'entry' ? 'entry' : 'account');
 
-  // El popover se monta ya con el rango vigente; si cambia por fuera (otro
-  // override), se resincroniza.
   useEffect(() => {
     setMin(range?.min != null ? String(range.min) : '');
     setMax(range?.max != null ? String(range.max) : '');
@@ -80,7 +78,6 @@ function RangeEditor({
   };
 
   const restore = (): void => {
-    // Se limpian ambos niveles para que el analito vuelva al catálogo del sistema.
     onSaveEntryRange(null);
     onSaveAccountRange(null);
     onClose();
@@ -155,6 +152,129 @@ function RangeEditor({
   );
 }
 
+function ValueControl({
+  analyte,
+  value,
+  onChange,
+  status,
+  style,
+  filled,
+  inputRef,
+  onEnter,
+}: {
+  analyte: LabAnalyte;
+  value: number | string | null;
+  onChange: (value: number | string | null) => void;
+  status: LabStatus;
+  style: { box: string; text: string; unit: string };
+  filled: boolean;
+  inputRef?: (element: HTMLInputElement | HTMLSelectElement | null) => void;
+  onEnter?: () => void;
+}): ReactNode {
+  if (analyte.kind === 'select') {
+    return (
+      <select
+        ref={(element) => inputRef?.(element)}
+        value={(value as string) ?? ''}
+        onChange={(event) => onChange(event.target.value || null)}
+        className={`w-full cursor-pointer rounded-[12px] border px-3 py-2.5 text-[13px] font-semibold outline-none transition-all ${style.box} ${filled ? style.text : 'text-slate-400'}`}
+      >
+        <option value="">Seleccionar</option>
+        {analyte.options?.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <div className={`flex items-center gap-1 overflow-hidden rounded-[12px] border transition-all ${style.box}`}>
+      {status === 'high' || status === 'low' ? (
+        <span
+          className={`pl-2.5 ${style.text}`}
+          title={status === 'high' ? 'Por encima del rango de referencia' : 'Por debajo del rango de referencia'}
+        >
+          {status === 'high' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+        </span>
+      ) : null}
+      <input
+        ref={(element) => inputRef?.(element)}
+        type="number"
+        inputMode="decimal"
+        step={analyte.step ?? 'any'}
+        value={value ?? ''}
+        onChange={(event) => onChange(parseLabNumber(event.target.value))}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            onEnter?.();
+          }
+        }}
+        className={`w-full min-w-0 bg-transparent px-3 py-2.5 text-right text-[13px] font-bold outline-none placeholder:font-normal placeholder:text-slate-300 ${filled ? style.text : 'text-slate-400'}`}
+        placeholder="–"
+      />
+      {analyte.unit ? <span className={`shrink-0 pr-3.5 text-[11px] font-semibold ${filled ? style.unit : 'text-slate-300'}`}>{analyte.unit}</span> : null}
+    </div>
+  );
+}
+
+function RangeControl({
+  analyte,
+  range,
+  source,
+  rangeOpen,
+  setRangeOpen,
+  onSaveEntryRange,
+  onSaveAccountRange,
+}: {
+  analyte: LabAnalyte;
+  range: LabRange | null;
+  source: RangeSource;
+  rangeOpen: boolean;
+  setRangeOpen: (open: boolean) => void;
+  onSaveEntryRange: (range: LabRange | null) => void;
+  onSaveAccountRange: (range: LabRange | null) => void;
+}): ReactNode {
+  if (analyte.kind === 'select') {
+    return <span className="text-[11.5px] text-slate-400">{analyte.normal ? `Normal: ${analyte.normal}` : '—'}</span>;
+  }
+
+  return (
+    <Popover open={rangeOpen} onOpenChange={setRangeOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Editar el rango de referencia"
+          className="group flex items-center gap-1.5 rounded-[8px] px-1.5 py-1 text-left transition hover:bg-slate-50"
+        >
+          <span className={`text-[12px] tabular-nums ${source === 'none' ? 'text-slate-300' : 'text-slate-500'}`}>
+            {formatRange(range)}
+          </span>
+          {source === 'entry' || source === 'account' ? (
+            <span
+              title={SOURCE_LABEL[source]}
+              className="rounded-full bg-brand-50 px-1.5 py-[1px] text-[8.5px] font-bold uppercase tracking-wider text-brand-500"
+            >
+              {source === 'entry' ? 'toma' : 'lab'}
+            </span>
+          ) : null}
+          <Pencil className="h-3 w-3 text-slate-200 transition group-hover:text-slate-400" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 p-3">
+        <RangeEditor
+          analyte={analyte}
+          range={range}
+          source={source}
+          onSaveEntryRange={onSaveEntryRange}
+          onSaveAccountRange={onSaveAccountRange}
+          onClose={() => setRangeOpen(false)}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function LabValueRow({
   analyte,
   value,
@@ -165,107 +285,66 @@ export default function LabValueRow({
   onSaveAccountRange,
   inputRef,
   onEnter,
+  layout = 'row',
 }: LabValueRowProps) {
   const [rangeOpen, setRangeOpen] = useState(false);
   const status = evaluateValue(analyte, value, range);
   const style = status ? STATUS_STYLES[status] : EMPTY_STYLE;
   const filled = hasValue(value);
 
+  const label = (
+    <div className="flex items-center gap-1.5">
+      <span className={`text-[13px] ${filled ? 'font-semibold text-slate-700' : 'text-slate-500'}`}>{analyte.label}</span>
+      {analyte.hint ? (
+        <span title={analyte.hint} className="cursor-help text-slate-300 transition hover:text-slate-500">
+          <HelpCircle className="h-3 w-3" />
+        </span>
+      ) : null}
+    </div>
+  );
+
+  const valueControl = (
+    <ValueControl
+      analyte={analyte}
+      value={value}
+      onChange={onChange}
+      status={status}
+      style={style}
+      filled={filled}
+      inputRef={inputRef}
+      onEnter={onEnter}
+    />
+  );
+
+  const rangeControl = (
+    <RangeControl
+      analyte={analyte}
+      range={range}
+      source={source}
+      rangeOpen={rangeOpen}
+      setRangeOpen={setRangeOpen}
+      onSaveEntryRange={onSaveEntryRange}
+      onSaveAccountRange={onSaveAccountRange}
+    />
+  );
+
+  if (layout === 'stack') {
+    return (
+      <div className="rounded-2xl border border-slate-200/80 bg-[#fafbfd] p-3.5">
+        <div className="mb-2.5 flex items-start justify-between gap-2">
+          {label}
+          {rangeControl}
+        </div>
+        {valueControl}
+      </div>
+    );
+  }
+
   return (
     <tr className="border-b border-slate-50 last:border-b-0">
-      <td className="py-3 pr-3 align-middle">
-        <div className="flex items-center gap-1.5">
-          <span className={`text-[13px] ${filled ? 'font-semibold text-slate-700' : 'text-slate-500'}`}>{analyte.label}</span>
-          {analyte.hint ? (
-            <span title={analyte.hint} className="cursor-help text-slate-300 transition hover:text-slate-500">
-              <HelpCircle className="h-3 w-3" />
-            </span>
-          ) : null}
-        </div>
-      </td>
-
-      <td className="w-[132px] py-3 pr-3 align-middle sm:w-[188px]">
-        {analyte.kind === 'select' ? (
-          <select
-            ref={(element) => inputRef?.(element)}
-            value={(value as string) ?? ''}
-            onChange={(event) => onChange(event.target.value || null)}
-            className={`w-full cursor-pointer rounded-[12px] border px-3 py-2.5 text-[13px] font-semibold outline-none transition-all ${style.box} ${filled ? style.text : 'text-slate-400'}`}
-          >
-            <option value="">Seleccionar</option>
-            {analyte.options?.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        ) : (
-          <div className={`flex items-center gap-1 overflow-hidden rounded-[12px] border transition-all ${style.box}`}>
-            {status === 'high' || status === 'low' ? (
-              <span
-                className={`pl-2.5 ${style.text}`}
-                title={status === 'high' ? 'Por encima del rango de referencia' : 'Por debajo del rango de referencia'}
-              >
-                {status === 'high' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
-              </span>
-            ) : null}
-            <input
-              ref={(element) => inputRef?.(element)}
-              type="number"
-              inputMode="decimal"
-              step={analyte.step ?? 'any'}
-              value={value ?? ''}
-              onChange={(event) => onChange(parseLabNumber(event.target.value))}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  onEnter?.();
-                }
-              }}
-              className={`w-full min-w-0 bg-transparent px-3 py-2.5 text-right text-[13px] font-bold outline-none placeholder:font-normal placeholder:text-slate-300 ${filled ? style.text : 'text-slate-400'}`}
-              placeholder="–"
-            />
-            {analyte.unit ? <span className={`shrink-0 pr-3.5 text-[11px] font-semibold ${filled ? style.unit : 'text-slate-300'}`}>{analyte.unit}</span> : null}
-          </div>
-        )}
-      </td>
-
-      <td className="w-[96px] py-3 align-middle sm:w-[140px]">
-        {analyte.kind === 'select' ? (
-          <span className="text-[11.5px] text-slate-400">{analyte.normal ? `Normal: ${analyte.normal}` : '—'}</span>
-        ) : (
-          <Popover open={rangeOpen} onOpenChange={setRangeOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                title="Editar el rango de referencia"
-                className="group flex items-center gap-1.5 rounded-[8px] px-1.5 py-1 text-left transition hover:bg-slate-50"
-              >
-                <span className={`text-[12px] tabular-nums ${source === 'none' ? 'text-slate-300' : 'text-slate-500'}`}>
-                  {formatRange(range)}
-                </span>
-                {source === 'entry' || source === 'account' ? (
-                  <span
-                    title={SOURCE_LABEL[source]}
-                    className="rounded-full bg-brand-50 px-1.5 py-[1px] text-[8.5px] font-bold uppercase tracking-wider text-brand-500"
-                  >
-                    {source === 'entry' ? 'toma' : 'lab'}
-                  </span>
-                ) : null}
-                <Pencil className="h-3 w-3 text-slate-200 transition group-hover:text-slate-400" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-64 p-3">
-              <RangeEditor
-                analyte={analyte}
-                range={range}
-                source={source}
-                onSaveEntryRange={onSaveEntryRange}
-                onSaveAccountRange={onSaveAccountRange}
-                onClose={() => setRangeOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
-        )}
-      </td>
+      <td className="py-3 pr-3 align-middle">{label}</td>
+      <td className="w-[160px] py-3 pr-3 align-middle md:w-[188px]">{valueControl}</td>
+      <td className="w-[120px] py-3 align-middle md:w-[140px]">{rangeControl}</td>
     </tr>
   );
 }

@@ -17,7 +17,7 @@ function FichaShell() {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <div className="mx-auto min-h-screen max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
       <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
           <BrandLogo alt="NutriGenius Lite" showLite />

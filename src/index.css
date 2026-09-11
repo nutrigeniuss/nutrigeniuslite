@@ -103,7 +103,7 @@
 
 /* Aire interno estándar de las cards (nada pegado al borde). */
 .ng-inset {
-  padding: 1.5rem;
+  padding: 1.15rem;
 }
 
 @media (min-width: 640px) {
