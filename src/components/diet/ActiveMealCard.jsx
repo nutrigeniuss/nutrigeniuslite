@@ -171,24 +171,23 @@ export default function ActiveMealCard({
           muerto, ofrece accesos rápidos para cargar la comida. */}
       {meal.items.length === 0 && (
         <div className="px-5 py-8">
-          <div className="mx-auto max-w-md rounded-[22px] border border-dashed border-[#dcd9ff] bg-gradient-to-b from-white to-[#f7f6ff]/60 px-6 py-9 text-center">
-            <div className="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-50 to-[#f4f2ff] text-brand-500 ring-1 ring-[#e7e3ff] shadow-[0_6px_16px_-6px_rgba(59,95,235,0.35)]">
-              <Search className="h-6 w-6" strokeWidth={2} />
+          <div className="mx-auto max-w-md rounded-[1.75rem] border border-brand-500/10 bg-gradient-to-b from-white to-brand-50/50 px-6 py-10 text-center shadow-[0_16px_40px_rgba(59,95,235,0.08)]">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-[0_12px_28px_rgba(59,95,235,0.32)]">
+              <Search className="h-6 w-6" strokeWidth={2.1} />
             </div>
-            <p className="text-[15px] font-bold tracking-tight text-slate-800">Empieza a armar {meal.name}</p>
-            <p className="mt-1 text-xs text-slate-400">
-              {readOnly ? "Este tiempo de comida no tiene alimentos." : "Busca un alimento o una receta para empezar."}
+            <p className="text-[15px] font-bold tracking-tight text-slate-900">Empieza a armar {meal.name}</p>
+            <p className="mt-1.5 text-sm text-slate-500">
+              {readOnly ? "Este tiempo de comida no tiene alimentos." : "Busca un alimento para empezar."}
             </p>
             {!readOnly ? (
-              <div className="mt-4 flex justify-center">
+              <div className="mt-5 flex justify-center">
                 <button
                   type="button"
                   onClick={onOpenFoodSearch}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#3b5feb_0%,#6d81f2_100%)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_22px_-12px_rgba(59,95,235,0.7)] transition hover:opacity-95"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(59,95,235,0.32)] transition hover:opacity-95"
                 >
                   <Search className="h-4 w-4" />
-                  Buscar alimento o receta
-                  <kbd className="ml-0.5 hidden rounded border border-white/30 bg-white/15 px-1.5 py-0.5 text-[10px] font-semibold sm:inline">/</kbd>
+                  Buscar alimento
                 </button>
               </div>
             ) : null}

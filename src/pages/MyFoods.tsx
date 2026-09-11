@@ -1,8 +1,8 @@
 import { useEffect, useState, type MouseEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Apple, ArrowLeft, Beef, Droplets, Flame, Pencil, Plus, Search, Trash2, Wheat } from 'lucide-react';
+import { Apple, Beef, Droplets, Flame, Pencil, Plus, Search, Trash2, Wheat } from 'lucide-react';
+import BackNav from '@/components/BackNav';
 import { logger, errorMessage } from '@/lib/logger';
 import FoodFormModal from '@/components/foods/FoodFormModal';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
@@ -199,9 +199,7 @@ export default function MyFoods() {
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <Link to="/app" className="ng-muted mb-2 inline-flex items-center gap-1 hover:text-brand-500">
-            <ArrowLeft className="h-4 w-4" /> Calculadora
-          </Link>
+          <BackNav to="/app" label="Volver a la calculadora" className="mb-3" />
           <h1 className="ng-page-title">Mis Alimentos</h1>
           <p className="ng-muted mt-0.5">
             {personalFoodsCount} alimento{personalFoodsCount !== 1 ? 's' : ''}

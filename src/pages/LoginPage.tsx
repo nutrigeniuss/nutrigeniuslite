@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import BackNav from '@/components/BackNav';
 import BrandLogo from '@/components/BrandLogo';
 import PaymentTransferDetails from '@/components/PaymentTransferDetails';
 
@@ -34,13 +34,7 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
-      <Link
-        to="/"
-        className="mb-5 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-slate-500 transition hover:text-brand-500"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Volver al inicio
-      </Link>
+      <BackNav to="/" label="Volver al inicio" className="mb-5 self-start" />
 
       <Link to="/" className="mb-8 self-start">
         <BrandLogo alt="NutriGenius Lite" showLite />

@@ -196,6 +196,29 @@
   box-shadow: 0 0 0 4px rgba(59, 95, 235, 0.1);
 }
 
+/* Retorno evidente (login, admin, catálogos) */
+.ng-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #dbe3f5;
+  background: #fff;
+  padding: 0.55rem 1rem 0.55rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e293b;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ng-back:hover {
+  border-color: #3b5feb;
+  background: #eef2ff;
+  color: #2f4cd4;
+  box-shadow: 0 8px 20px rgba(59, 95, 235, 0.12);
+}
+
 /* Landing: funciones (marketing) */
 @keyframes ng-feature-in {
   from {

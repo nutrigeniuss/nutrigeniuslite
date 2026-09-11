@@ -1,15 +1,6 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
-// Centered modal (NutriMind-style) that hosts the food/recipe/USDA search
-// UI. Wider than the previous right-side drawer (max-w-5xl ≈ 1024px) so
-// the full table with macros + add button fits comfortably without the
-// columns being pushed off-screen.
-//
-// Stays open after each add — adding 5 foods is 5 clicks, not 5 open/close
-// cycles. Mirrors the a11y patterns used elsewhere in the app (focus
-// trap, focus restoration, Esc + overlay close).
-
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -68,14 +59,14 @@ export default function FoodSearchModal({ open, onClose, title = "Agregar alimen
 
   return (
     <div
-      className="fixed inset-0 z-[55] flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-[55] flex items-end justify-center p-0 sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={title}
       data-testid="food-search-modal"
     >
       <div
-        className="absolute inset-0 bg-slate-900/30 backdrop-blur-[3px] transition-opacity"
+        className="absolute inset-0 bg-slate-900/35 backdrop-blur-[4px]"
         onClick={onClose}
         data-testid="food-search-overlay"
         aria-hidden="true"
@@ -84,33 +75,37 @@ export default function FoodSearchModal({ open, onClose, title = "Agregar alimen
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden outline-none animate-in fade-in zoom-in-95 duration-200"
+        className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[1.75rem] bg-white shadow-[0_-8px_40px_rgba(15,23,42,0.18)] outline-none sm:rounded-[1.75rem] sm:shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-br from-white to-slate-50 flex-shrink-0">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Catálogo</p>
-            <h2 className="text-base font-bold text-slate-800 leading-snug">{title}</h2>
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-slate-100/90 bg-gradient-to-br from-white via-brand-50/30 to-coral-50/20 px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-500">Agregar</p>
+            <h2 className="ng-display truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+              {title}
+            </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition flex-shrink-0"
+            className="ng-back !px-3 !py-2.5"
             aria-label="Cerrar buscador de alimentos"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" strokeWidth={2.4} />
+            <span className="hidden sm:inline">Cerrar</span>
           </button>
         </div>
 
-        {/* Body — child fills the available space and handles its own scrolling */}
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex min-h-0 flex-1 flex-col bg-[#f7f8fc]/70">
           {children}
         </div>
 
-        {/* Footer hint */}
-        <div className="border-t border-slate-100 px-6 py-2.5 bg-slate-50/50 flex-shrink-0">
-          <p className="text-[11px] text-slate-400 text-center">
-            Agrega varios alimentos sin cerrar · <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-mono">Esc</kbd> para cerrar
+        <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-3 sm:px-6">
+          <p className="text-center text-[11px] font-medium text-slate-400">
+            Puedes agregar varios sin cerrar ·{" "}
+            <kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
+              Esc
+            </kbd>{" "}
+            cierra
           </p>
         </div>
       </div>

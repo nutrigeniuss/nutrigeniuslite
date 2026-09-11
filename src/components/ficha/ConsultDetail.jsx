@@ -241,7 +241,7 @@ export default function ConsultDetail({
     <div className="w-full">
       {!embedded ? (
         <div className="mb-4 md:hidden">
-          <button type="button" onClick={() => void handleBack()} className="text-sm font-semibold text-slate-400">
+          <button type="button" onClick={() => void handleBack()} className="ng-back">
             Volver
           </button>
         </div>
@@ -250,7 +250,7 @@ export default function ConsultDetail({
       <div className="mb-5 flex items-center gap-2.5 overflow-x-auto overflow-y-hidden border-b border-slate-200/70 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {!embedded ? (
           <div className="hidden flex-shrink-0 items-center pr-2 md:flex">
-            <button type="button" onClick={() => void handleBack()} className="text-sm font-semibold text-slate-400">
+            <button type="button" onClick={() => void handleBack()} className="ng-back">
               Volver
             </button>
           </div>

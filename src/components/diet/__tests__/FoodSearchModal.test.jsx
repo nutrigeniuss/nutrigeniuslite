@@ -106,7 +106,7 @@ describe('FoodSearchModal - autofocus convention', () => {
 describe('FoodSearchModal - footer hint', () => {
   it('renders the persistent open + Esc instruction', () => {
     render(<FoodSearchModal open onClose={() => {}}><div>x</div></FoodSearchModal>);
-    expect(screen.getByText(/Agrega varios alimentos sin cerrar/i)).toBeInTheDocument();
+    expect(screen.getByText(/Puedes agregar varios sin cerrar/i)).toBeInTheDocument();
     expect(screen.getByText('Esc')).toBeInTheDocument();
   });
 });

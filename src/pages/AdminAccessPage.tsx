@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import BackNav from '@/components/BackNav';
 import { useAuth } from '@/lib/AuthContext';
 import {
   buildGrantProfilePatch,
@@ -210,10 +210,8 @@ export default function AdminAccessPage() {
     <div className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <Link to="/app" className="ng-muted inline-flex items-center gap-1 hover:text-brand-500">
-            <ArrowLeft className="h-4 w-4" /> Calculadora
-          </Link>
-          <h1 className="ng-page-title mt-2">Módulo maestro</h1>
+          <BackNav to="/app" label="Volver a la calculadora" />
+          <h1 className="ng-page-title mt-3">Módulo maestro</h1>
           <p className="ng-muted mt-1">Acceso de cuentas · subir base maestra de alimentos</p>
         </div>
         <div className="flex flex-wrap gap-2">

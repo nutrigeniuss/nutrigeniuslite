@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Download, Trash2, Upload } from 'lucide-react';
+import { Download, Trash2, Upload } from 'lucide-react';
+import BackNav from '@/components/BackNav';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { clearFoodCatalogCache } from '@/lib/foodCatalogCache';
@@ -174,10 +175,8 @@ export default function FoodsCatalogPage() {
     <div className="mx-auto min-h-screen max-w-4xl px-4 py-6 sm:px-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link to="/admin" className="ng-muted inline-flex items-center gap-1 hover:text-brand-500">
-            <ArrowLeft className="h-4 w-4" /> Módulo maestro
-          </Link>
-          <h1 className="ng-page-title mt-2">Subir base maestra</h1>
+          <BackNav to="/admin" label="Volver al módulo maestro" />
+          <h1 className="ng-page-title mt-3">Subir base maestra</h1>
           <p className="ng-muted mt-1">
             Catálogo común para todos los nutricionistas.
           </p>

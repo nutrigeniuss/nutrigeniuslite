@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { LITE_PAYMENT } from '@/config/litePayment';
+import BackNav from '@/components/BackNav';
 import PaymentTransferDetails from '@/components/PaymentTransferDetails';
 
 export default function AwaitingAccessPage() {
@@ -45,9 +46,7 @@ export default function AwaitingAccessPage() {
           </button>
         </div>
 
-        <Link to="/" className="mt-6 inline-block text-sm font-semibold text-brand-500">
-          Volver al inicio
-        </Link>
+        <BackNav to="/" label="Volver al inicio" className="mt-6" />
       </div>
     </div>
   );

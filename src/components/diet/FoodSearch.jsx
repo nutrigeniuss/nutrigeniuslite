@@ -184,151 +184,162 @@ export default function FoodSearch({ onAdd }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex-shrink-0">
-        <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 px-3 pt-3 sm:px-6">
-          <div className="relative flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 pb-3 pt-1 text-sm font-semibold text-brand-500">
-            Mis Alimentos
-            <span className="rounded-full bg-brand-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{allFoods.length}</span>
-            <span className="absolute -bottom-px left-2 right-2 h-0.5 rounded-t bg-brand-500" />
-          </div>
-        </div>
-
+      <div className="flex-shrink-0 px-4 pt-4 sm:px-6">
         {allFoods.length === 0 ? (
-          <div className="mx-6 mt-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="mb-3 rounded-2xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             No hay base de alimentos. Sube la maestra en Maestro o agrega en Mis Alimentos.
           </div>
         ) : null}
 
-        <div className="px-6 pb-3 pt-4">
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-              <Search className="h-5 w-5 text-[var(--ng-brand-600)]" />
-            </div>
-            <input
-              ref={searchInputRef}
-              data-autofocus
-              type="text"
-              placeholder="Buscar alimento... (presiona / para enfocar)"
-              value={foodSearch}
-              onChange={(e) => setFoodSearch(e.target.value)}
-              className="block w-full rounded-xl border border-[#dde3f0]/80 bg-[#f7f8ff] py-3 pl-12 pr-20 text-sm font-semibold text-slate-800 shadow-sm transition placeholder-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10"
-            />
-            {foodSearch ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setFoodSearch("");
-                  searchInputRef.current?.focus();
-                }}
-                className="absolute inset-y-0 right-12 flex items-center text-slate-400 hover:text-slate-600"
-                aria-label="Limpiar búsqueda"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            ) : null}
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+            <Search className="h-5 w-5 text-brand-500" />
           </div>
+          <input
+            ref={searchInputRef}
+            data-autofocus
+            type="text"
+            placeholder="Buscar alimento…"
+            value={foodSearch}
+            onChange={(e) => setFoodSearch(e.target.value)}
+            className="block w-full rounded-2xl border border-slate-200/90 bg-white py-3.5 pl-12 pr-14 text-sm font-semibold text-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition placeholder:font-medium placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
+          />
+          {foodSearch ? (
+            <button
+              type="button"
+              onClick={() => {
+                setFoodSearch("");
+                searchInputRef.current?.focus();
+              }}
+              className="absolute inset-y-0 right-3 my-auto flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : (
+            <kbd className="pointer-events-none absolute inset-y-0 right-3 my-auto hidden h-7 items-center rounded-lg border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-400 sm:flex">
+              /
+            </kbd>
+          )}
         </div>
+        <p className="mt-2 px-1 text-xs font-medium text-slate-400">
+          {allFoods.length > 0
+            ? `${allFoods.length} alimentos en el catálogo`
+            : "Escribe para buscar en el catálogo"}
+        </p>
       </div>
 
       {foodSearch.trim() ? (
-        <div className="flex-1 overflow-y-auto px-3 pb-4 sm:px-6">
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full border-collapse text-left">
-              <FoodResultsTableHead quantityLabel="Cant." compactOnMobile />
-              <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                  <tr><td colSpan={7} className="p-8 text-center text-sm text-slate-400">Cargando...</td></tr>
-                ) : filteredFoods.length === 0 ? (
-                  <tr><td colSpan={7} className="p-10 text-center text-sm text-slate-300">Sin resultados para tu búsqueda</td></tr>
-                ) : filteredFoods.map((food) => {
-                  const st = getState(food.id);
-                  const units = getUnits(food);
-                  const scaled = scaleFood(food);
-                  const currentUnit = units[st.unitIndex] || units[0];
-                  const isAdded = added[food.id];
-                  const equivalentGrams = currentUnit?.isHousehold
-                    ? roundNutritionValue((Number(st.quantity) || 0) * currentUnit.grams)
-                    : null;
-                  return (
-                    <tr key={food.id} className="group transition hover:bg-slate-50/80">
-                      <td className="p-2 text-center sm:p-3">
-                        <DeferredNumberInput
-                          min={0}
-                          step={currentUnit.isHousehold ? 0.5 : 10}
-                          value={st.quantity}
-                          displayPrecision={2}
-                          onCommit={(v) => setItemState((s) => ({ ...s, [food.id]: { ...getState(food.id), quantity: v } }))}
-                          className="w-16 rounded-lg border border-slate-200 bg-white p-1.5 text-center text-sm font-bold text-slate-700 outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-                        />
-                      </td>
-                      <td className="p-2 sm:p-3">
-                        <p className="text-sm font-semibold leading-tight text-slate-800">{highlightMatch(food.name, foodSearch)}</p>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                          {units.length > 1 ? (
-                            <UnitSelect
-                              options={units}
-                              value={st.unitIndex}
-                              onChange={(nextUnitIndex) => {
-                                const nextUnit = units[nextUnitIndex] || units[0];
+        <div className="mt-3 flex-1 overflow-y-auto px-3 pb-4 sm:px-6">
+          <div className="overflow-hidden rounded-[1.25rem] border border-white bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <FoodResultsTableHead quantityLabel="Cant." compactOnMobile />
+                <tbody className="divide-y divide-slate-100">
+                  {loading ? (
+                    <tr><td colSpan={7} className="p-10 text-center text-sm text-slate-400">Cargando…</td></tr>
+                  ) : filteredFoods.length === 0 ? (
+                    <tr><td colSpan={7} className="p-12 text-center text-sm text-slate-400">Sin resultados para tu búsqueda</td></tr>
+                  ) : filteredFoods.map((food) => {
+                    const st = getState(food.id);
+                    const units = getUnits(food);
+                    const scaled = scaleFood(food);
+                    const currentUnit = units[st.unitIndex] || units[0];
+                    const isAdded = added[food.id];
+                    const equivalentGrams = currentUnit?.isHousehold
+                      ? roundNutritionValue((Number(st.quantity) || 0) * currentUnit.grams)
+                      : null;
+                    return (
+                      <tr key={food.id} className="group transition hover:bg-brand-50/40">
+                        <td className="p-2.5 text-center sm:p-3">
+                          <DeferredNumberInput
+                            min={0}
+                            step={currentUnit.isHousehold ? 0.5 : 10}
+                            value={st.quantity}
+                            displayPrecision={2}
+                            onCommit={(v) => setItemState((s) => ({ ...s, [food.id]: { ...getState(food.id), quantity: v } }))}
+                            className="w-16 rounded-xl border border-slate-200 bg-[#f7f8fc] p-2 text-center text-sm font-bold text-slate-700 outline-none transition hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/15"
+                          />
+                        </td>
+                        <td className="p-2.5 sm:p-3">
+                          <p className="text-sm font-bold leading-tight text-slate-900">{highlightMatch(food.name, foodSearch)}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {units.length > 1 ? (
+                              <UnitSelect
+                                options={units}
+                                value={st.unitIndex}
+                                onChange={(nextUnitIndex) => {
+                                  const nextUnit = units[nextUnitIndex] || units[0];
+                                  setItemState((s) => ({
+                                    ...s,
+                                    [food.id]: {
+                                      ...getState(food.id),
+                                      unitIndex: nextUnitIndex,
+                                      quantity: getDefaultQuantityForUnit(nextUnit),
+                                    },
+                                  }));
+                                }}
+                                ariaLabel={`Unidad de ${food.name}`}
+                              />
+                            ) : null}
+                            <EquivalentGramsField
+                              grams={equivalentGrams}
+                              unitGrams={currentUnit?.grams}
+                              onQuantityChange={(nextQuantity) =>
                                 setItemState((s) => ({
                                   ...s,
-                                  [food.id]: {
-                                    ...getState(food.id),
-                                    unitIndex: nextUnitIndex,
-                                    quantity: getDefaultQuantityForUnit(nextUnit),
-                                  },
-                                }));
-                              }}
-                              ariaLabel={`Unidad de ${food.name}`}
+                                  [food.id]: { ...getState(food.id), quantity: nextQuantity },
+                                }))
+                              }
                             />
-                          ) : null}
-                          <EquivalentGramsField
-                            grams={equivalentGrams}
-                            unitGrams={currentUnit?.grams}
-                            onQuantityChange={(nextQuantity) =>
-                              setItemState((s) => ({
-                                ...s,
-                                [food.id]: { ...getState(food.id), quantity: nextQuantity },
-                              }))
-                            }
-                          />
-                        </div>
-                      </td>
-                      <td className="p-2 text-center text-sm font-bold tabular-nums text-slate-800 sm:p-3">{scaled.calories}</td>
-                      <MacroValueCell macro="carbs" value={scaled.carbs} hideOnMobile />
-                      <MacroValueCell macro="protein" value={scaled.protein} hideOnMobile />
-                      <MacroValueCell macro="fat" value={scaled.fat} hideOnMobile />
-                      <td className="p-2 text-right sm:p-3">
-                        <button
-                          type="button"
-                          onClick={() => void handleAddFood(food)}
-                          aria-label="Añadir alimento"
-                          className={`inline-flex h-8 w-8 transform items-center justify-center rounded-full text-sm font-bold shadow-sm transition hover:scale-105 ${isAdded ? "bg-emerald-500 text-white" : "bg-gradient-to-br from-brand-500 to-[#6c63ff] text-white hover:from-brand-600 hover:to-[#5b53f0]"}`}
-                        >
-                          {isAdded ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                          </div>
+                        </td>
+                        <td className="p-2.5 text-center text-sm font-bold tabular-nums text-slate-800 sm:p-3">{scaled.calories}</td>
+                        <MacroValueCell macro="carbs" value={scaled.carbs} hideOnMobile />
+                        <MacroValueCell macro="protein" value={scaled.protein} hideOnMobile />
+                        <MacroValueCell macro="fat" value={scaled.fat} hideOnMobile />
+                        <td className="p-2.5 text-right sm:p-3">
+                          <button
+                            type="button"
+                            onClick={() => void handleAddFood(food)}
+                            aria-label="Añadir alimento"
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-[0_8px_18px_rgba(59,95,235,0.25)] transition hover:scale-105 ${isAdded ? "bg-energy-600 text-white shadow-[0_8px_18px_rgba(22,163,74,0.28)]" : "bg-gradient-to-br from-brand-500 to-brand-600 text-white"}`}
+                          >
+                            {isAdded ? <Check className="h-4 w-4" strokeWidth={2.5} /> : <Plus className="h-4 w-4" strokeWidth={2.5} />}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
             {foodsTotal > FOOD_PAGE_SIZE ? (
-              <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-500">
+              <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-[#fafbfd] px-4 py-2.5 text-xs text-slate-500">
                 <span>
                   Mostrando {(foodPage - 1) * FOOD_PAGE_SIZE + 1}–{Math.min(foodPage * FOOD_PAGE_SIZE, foodsTotal)} de {foodsTotal}
                 </span>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setFoodPage((p) => Math.max(1, p - 1))} disabled={foodPage === 1} className="rounded-md border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40">Anterior</button>
-                  <span className="font-semibold text-slate-700">{foodPage} / {Math.max(1, Math.ceil(foodsTotal / FOOD_PAGE_SIZE))}</span>
-                  <button type="button" onClick={() => setFoodPage((p) => Math.min(Math.max(1, Math.ceil(foodsTotal / FOOD_PAGE_SIZE)), p + 1))} disabled={foodPage >= Math.ceil(foodsTotal / FOOD_PAGE_SIZE)} className="rounded-md border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40">Siguiente</button>
+                  <button type="button" onClick={() => setFoodPage((p) => Math.max(1, p - 1))} disabled={foodPage === 1} className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">Anterior</button>
+                  <span className="font-bold text-slate-700">{foodPage} / {Math.max(1, Math.ceil(foodsTotal / FOOD_PAGE_SIZE))}</span>
+                  <button type="button" onClick={() => setFoodPage((p) => Math.min(Math.max(1, Math.ceil(foodsTotal / FOOD_PAGE_SIZE)), p + 1))} disabled={foodPage >= Math.ceil(foodsTotal / FOOD_PAGE_SIZE)} className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">Siguiente</button>
                 </div>
               </div>
             ) : null}
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.35rem] bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-[0_16px_32px_rgba(59,95,235,0.28)]">
+            <Search className="h-7 w-7" strokeWidth={2.1} />
+          </div>
+          <p className="text-base font-bold text-slate-900">Busca un alimento</p>
+          <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-slate-500">
+            Escribe el nombre arriba para ver cantidad, unidad y macros, y agrégalo a la comida.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
