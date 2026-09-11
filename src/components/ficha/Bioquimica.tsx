@@ -91,15 +91,15 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
   }
 
   return (
-    <div className="ng-inset">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-500">
-            <FlaskConical className="h-4 w-4" />
+    <div className="w-full">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-50 text-brand-500">
+            <FlaskConical className="h-5 w-5" />
           </span>
           <div>
-            <p className="ng-section-title">Bioquímica</p>
-            <p className="ng-muted mt-0.5">{entries.length} toma{entries.length === 1 ? '' : 's'}</p>
+            <h3 className="ng-display text-lg font-semibold tracking-tight text-slate-900">Bioquímica</h3>
+            <p className="ng-muted mt-0.5">{entries.length} toma{entries.length === 1 ? '' : 's'} registrada{entries.length === 1 ? '' : 's'}</p>
           </div>
         </div>
         <button
@@ -112,7 +112,7 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
       </div>
 
       {sorted.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-[#fafbfd] px-5 py-12 text-center">
+        <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-[#fafbfd] px-5 py-14 text-center">
           <FlaskConical className="mx-auto h-8 w-8 text-slate-300" />
           <p className="mt-3 text-sm font-semibold text-slate-600">Sin exámenes todavía</p>
           <button
@@ -124,7 +124,7 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
           </button>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {sorted.map((entry) => {
             const parts = formatDateParts(entry.date);
             const filled = countEntryFilled(entry);
@@ -132,15 +132,15 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
             return (
               <div
                 key={entry.id}
-                className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-[#fafbfd] px-4 py-3.5 transition hover:border-brand-500/30"
+                className="flex items-center gap-2 rounded-[1.25rem] border border-slate-200/80 bg-white px-4 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] transition hover:border-brand-500/25"
               >
                 <button type="button" onClick={() => openEntry(entry)} className="min-w-0 flex-1 text-left">
-                  <div className="flex items-baseline gap-2">
-                    <span className="ng-metric text-[1.125rem]">{parts.day}</span>
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="ng-metric text-[1.25rem]">{parts.day}</span>
                     <span className="ng-muted">{parts.monthYear}</span>
                     {parts.relative ? <span className={`${pillIdle} !py-0.5 text-[10px]`}>{parts.relative}</span> : null}
                   </div>
-                  <p className="ng-muted mt-1">
+                  <p className="ng-muted mt-1.5">
                     {entry.lab || 'Laboratorio'} · {filled} valor{filled === 1 ? '' : 'es'}
                     {out > 0 ? ` · ${out} fuera de rango` : ''}
                   </p>
@@ -148,7 +148,7 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
                 <button
                   type="button"
                   onClick={() => openEntry(entry)}
-                  className="rounded-full p-2 text-slate-400 hover:bg-white hover:text-brand-500"
+                  className="rounded-full p-2 text-slate-400 hover:bg-brand-50 hover:text-brand-500"
                   aria-label="Editar"
                 >
                   <Pencil className="h-4 w-4" />
@@ -156,7 +156,7 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
                 <button
                   type="button"
                   onClick={() => setEntryToDelete(entry)}
-                  className="rounded-full p-2 text-slate-400 hover:bg-white hover:text-rose-500"
+                  className="rounded-full p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
                   aria-label="Eliminar"
                 >
                   <Trash2 className="h-4 w-4" />

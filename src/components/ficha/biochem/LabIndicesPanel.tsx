@@ -276,10 +276,10 @@ function IndexCard({
   const computed = result.value !== null;
 
   return (
-    <div className="rounded-[16px] border border-[#e2e8f0]/80 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+    <div className="flex h-full flex-col rounded-[1.15rem] border border-slate-200/80 bg-[#fafbfd] p-4 sm:p-5">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <h5 className="truncate text-[12.5px] font-bold text-slate-700">{result.label}</h5>
+          <h5 className="truncate text-[13px] font-bold text-slate-800">{result.label}</h5>
           <span title={result.reference} className="cursor-help text-slate-300 transition hover:text-slate-500">
             <Info className="h-3 w-3" />
           </span>
@@ -391,24 +391,25 @@ export default function LabIndicesPanel({
   const computed = results.filter((result) => result.value !== null).length;
 
   return (
-    <div className="p-6">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="h-4 w-1 rounded-full bg-brand-500" />
-        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-700">Índices calculados</h4>
-        <span className="text-[11px] text-slate-400">
-          {computed} de {results.length} con datos suficientes
-        </span>
+    <div className="p-5 sm:p-6 lg:p-7">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h4 className="ng-display text-lg font-semibold tracking-tight text-slate-900">Índices calculados</h4>
+          <p className="mt-1 text-sm text-slate-500">
+            {computed} de {results.length} con datos suficientes
+          </p>
+        </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-7">
         {INDEX_GROUPS.map((group) => {
           const groupResults = results.filter((result) => result.group === group);
           if (groupResults.length === 0) return null;
 
           return (
             <div key={group}>
-              <p className="mb-2 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-slate-400">{group}</p>
-              <div className="grid gap-3 md:grid-cols-2">
+              <p className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">{group}</p>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {groupResults.map((result) => (
                   <IndexCard
                     key={result.key}
@@ -425,7 +426,7 @@ export default function LabIndicesPanel({
         })}
       </div>
 
-      <p className="mt-4 text-[10.5px] text-slate-400">
+      <p className="mt-5 text-[11px] text-slate-400">
         Se recalculan solos al corregir cualquier valor. No se guardan.
       </p>
     </div>

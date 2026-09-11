@@ -163,12 +163,14 @@ export default function LabEntryDetail({
   inputRefs.current = [];
 
   return (
-    <div className="w-full ng-inset">
+    <div className="w-full">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <BackLink onClick={handleBack} label="Volver a Bioquímica" variant="icon" />
-          <div>
-            <h2 className="text-[15px] font-bold leading-tight text-slate-900">{formatLongDate(data.date)}</h2>
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <BackLink onClick={handleBack} label="Volver a Bioquímica" />
+          <div className="min-w-0">
+            <h2 className="text-base font-bold leading-tight text-slate-900 sm:text-[1.05rem]">
+              {formatLongDate(data.date)}
+            </h2>
             <p className="ng-muted mt-0.5">
               {totals.filled} {totals.filled === 1 ? 'análisis registrado' : 'análisis registrados'}
               {totals.out > 0 ? (
@@ -185,7 +187,7 @@ export default function LabEntryDetail({
               value={data.lab ?? ''}
               onChange={(event) => setData((current) => ({ ...current, lab: event.target.value }))}
               placeholder="Opcional"
-              className="ng-input !mt-0 w-40 sm:w-52"
+              className="ng-input !mt-0 w-40 sm:w-56"
             />
           </label>
           <button
@@ -211,8 +213,8 @@ export default function LabEntryDetail({
         </div>
       </div>
 
-      <div className="flex flex-col gap-0 overflow-hidden rounded-[1.25rem] border border-slate-200/80 bg-white md:flex-row">
-        <div className="flex w-full flex-shrink-0 gap-1 overflow-x-auto border-b border-slate-100 bg-[#fafbfd] p-2.5 md:w-52 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3">
+      <div className="flex flex-col overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.04)] lg:flex-row">
+        <div className="flex w-full flex-shrink-0 gap-1 overflow-x-auto border-b border-slate-100 bg-[#fafbfd] p-2.5 lg:w-64 lg:flex-col lg:overflow-visible lg:border-b-0 lg:border-r lg:p-3.5">
           {PANELS.map((item) => {
             const isActive = item.key === activePanel;
             const filled = countPanelFilled(item, values);
@@ -222,42 +224,40 @@ export default function LabEntryDetail({
                 key={item.key}
                 type="button"
                 onClick={() => setActivePanel(item.key)}
-                className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all md:w-full md:flex-shrink ${
+                className={`flex flex-shrink-0 items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold transition-all lg:w-full lg:flex-shrink ${
                   isActive
-                    ? 'bg-brand-50 text-brand-500'
-                    : 'text-slate-500 hover:bg-white hover:text-slate-700'
+                    ? 'bg-brand-500 text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]'
+                    : 'text-slate-500 hover:bg-white hover:text-slate-800'
                 }`}
               >
                 {out > 0 ? (
-                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 text-red-400" />
+                  <AlertTriangle className={`h-3.5 w-3.5 flex-shrink-0 ${isActive ? 'text-white/90' : 'text-red-400'}`} />
                 ) : filled > 0 ? (
-                  <Check className="h-3.5 w-3.5 flex-shrink-0 text-energy-600" />
+                  <Check className={`h-3.5 w-3.5 flex-shrink-0 ${isActive ? 'text-white/90' : 'text-energy-600'}`} />
                 ) : (
                   <span className="h-3.5 w-3.5 flex-shrink-0" />
                 )}
-                <span className="truncate md:flex-1">{item.label}</span>
+                <span className="truncate lg:flex-1">{item.label}</span>
                 {filled > 0 ? (
-                  <span className="text-[10px] font-bold tabular-nums text-slate-400">{filled}</span>
+                  <span className={`text-[10px] font-bold tabular-nums ${isActive ? 'text-white/80' : 'text-slate-400'}`}>{filled}</span>
                 ) : null}
               </button>
             );
           })}
 
-          {/* Índices calculados: separados de los paneles de captura porque no
-              se digitan. Van al final, después de todo lo que sí se ingresa. */}
-          <div className="my-2 hidden border-t border-slate-100 md:mx-4 md:block" />
+          <div className="my-2 hidden border-t border-slate-200/80 lg:mx-2 lg:block" />
           <button
             type="button"
             onClick={() => setActivePanel(INDICES_KEY)}
-            className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all md:w-full md:flex-shrink ${
+            className={`flex flex-shrink-0 items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold transition-all lg:w-full lg:flex-shrink ${
               showingIndices
-                ? 'bg-brand-50 text-brand-500'
-                : 'text-slate-500 hover:bg-white hover:text-slate-700'
+                ? 'bg-brand-500 text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]'
+                : 'text-slate-500 hover:bg-white hover:text-slate-800'
             }`}
           >
-            <Calculator className="h-3.5 w-3.5 flex-shrink-0 text-slate-300" />
-            <span className="truncate md:flex-1">Índices calculados</span>
-            <span className="text-[10px] font-bold tabular-nums text-slate-400">
+            <Calculator className={`h-3.5 w-3.5 flex-shrink-0 ${showingIndices ? 'text-white/90' : 'text-slate-300'}`} />
+            <span className="truncate lg:flex-1">Índices calculados</span>
+            <span className={`text-[10px] font-bold tabular-nums ${showingIndices ? 'text-white/80' : 'text-slate-400'}`}>
               {indices.length - pendingIndices}/{indices.length}
             </span>
           </button>
@@ -274,8 +274,8 @@ export default function LabEntryDetail({
             />
           ) : (
             <>
-          <div className="p-5 sm:p-6">
-            <div className="mb-4 flex items-center gap-2">
+          <div className="p-5 sm:p-6 lg:p-7">
+            <div className="mb-5 flex items-center gap-2">
               <span className="h-4 w-1 rounded-full bg-brand-500" />
               <h4 className="ng-section-title uppercase tracking-widest">{panel.label}</h4>
               {countPanelOutOfRange(panel, values, sex, accountRanges, entryRanges) > 0 ? (
@@ -316,7 +316,7 @@ export default function LabEntryDetail({
             </table>
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-[#f7f8ff] px-5 py-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-[#f7f8ff] px-5 py-4 sm:px-6 lg:px-7">
             <p className="text-xs text-slate-400">
               {panel.analytes.length} análisis en este panel. Completa solo los que reporte el laboratorio.
             </p>

@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 .worktrees/
+.vercel
+.env*
+
+scripts/tmp/
+
