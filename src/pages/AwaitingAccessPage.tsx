@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { LITE_PAYMENT } from '@/config/litePayment';
+import PaymentTransferDetails from '@/components/PaymentTransferDetails';
 
 export default function AwaitingAccessPage() {
   const { access, signOut, refreshProfile, profile } = useAuth();
@@ -14,23 +15,10 @@ export default function AwaitingAccessPage() {
           {disabled ? 'Activa tu cuenta' : 'Activa tu acceso'}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-500">
-          {disabled
-            ? `Hola${profile?.full_name ? `, ${profile.full_name}` : ''}. Activa tu cuenta con un plan desde S/ 30 (Yape ${LITE_PAYMENT.yapePhone}) a nombre de ${LITE_PAYMENT.holderName}.`
-            : `Hola${profile?.full_name ? `, ${profile.full_name}` : ''}. Elige un plan desde S/ 30 por Yape (${LITE_PAYMENT.yapePhone}) a nombre de ${LITE_PAYMENT.holderName}.`}
+          Hola{profile?.full_name ? `, ${profile.full_name}` : ''}. Transfiere tu plan y avísanos por WhatsApp para activar el acceso.
         </p>
 
-        <div className="mt-5 space-y-2 rounded-2xl bg-[#f7f8fc] p-4 text-sm text-slate-600">
-          <p><span className="font-semibold text-slate-800">Yape:</span> {LITE_PAYMENT.yapePhone}</p>
-          <p>
-            <span className="font-semibold text-slate-800">BCP Soles:</span>{' '}
-            <span className="font-mono tabular-nums">{LITE_PAYMENT.bcpAccount}</span>
-          </p>
-          <p>
-            <span className="font-semibold text-slate-800">CCI:</span>{' '}
-            <span className="font-mono tabular-nums text-[13px]">{LITE_PAYMENT.cci}</span>
-          </p>
-          <p className="text-xs text-slate-400">A nombre de {LITE_PAYMENT.holderName}</p>
-        </div>
+        <PaymentTransferDetails className="mt-5" />
 
         <div className="mt-6 flex flex-wrap gap-2">
           <a

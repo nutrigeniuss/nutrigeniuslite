@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
+import PaymentTransferDetails from '@/components/PaymentTransferDetails';
 
 export default function LoginPage() {
   const { signIn, signUp, session, ready, configured } = useAuth();
@@ -88,6 +89,8 @@ export default function LoginPage() {
           </div>
 
           {error ? <p className="text-sm font-medium text-coral-600">{error}</p> : null}
+
+          {mode === 'up' ? <PaymentTransferDetails /> : null}
 
           <button
             type="submit"
