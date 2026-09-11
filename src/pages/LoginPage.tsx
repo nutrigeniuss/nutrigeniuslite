@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import BrandLogo from '@/components/BrandLogo';
 import PaymentTransferDetails from '@/components/PaymentTransferDetails';
 
 export default function LoginPage() {
@@ -32,9 +34,16 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
-      <Link to="/" className="mb-8 inline-flex items-center gap-2 self-start">
-        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-coral-500 text-sm font-bold text-white">N</span>
-        <span className="ng-brand text-lg">NutriGenius Lite</span>
+      <Link
+        to="/"
+        className="mb-5 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-slate-500 transition hover:text-brand-500"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Volver al inicio
+      </Link>
+
+      <Link to="/" className="mb-8 self-start">
+        <BrandLogo alt="NutriGenius Lite" showLite />
       </Link>
 
       <div className="ng-card p-6 sm:p-8">
