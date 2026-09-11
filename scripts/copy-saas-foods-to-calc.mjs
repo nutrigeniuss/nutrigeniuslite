@@ -58,27 +58,59 @@ async function fetchExistingNames() {
 const existing = await fetchExistingNames();
 console.log('Ya hay', existing.size, 'maestros en destino');
 
+/** Solo columnas que existen en supabase/foods.sql de Calc. */
+const ALLOWED = new Set([
+  'nutritionist_id',
+  'submitted_by_nutritionist_id',
+  'reviewed_by_nutritionist_id',
+  'review_status',
+  'review_notes',
+  'reviewed_at',
+  'published_at',
+  'supersedes_food_id',
+  'name',
+  'category',
+  'country',
+  'portion_grams',
+  'calories',
+  'protein',
+  'carbs',
+  'fat',
+  'notes',
+  'nutrients',
+  'household_measures',
+  'alcohol',
+  'ash',
+  'caffeine',
+  'calcium',
+  'available_carbs',
+  'alpha_carotene',
+  'beta_carotene',
+  'fiber',
+  'sodium',
+]);
+
+const toCalcRow = (food) => {
+  const row = {};
+  for (const [key, value] of Object.entries(food)) {
+    if (!ALLOWED.has(key)) continue;
+    row[key] = value;
+  }
+  row.nutritionist_id = null;
+  row.submitted_by_nutritionist_id = null;
+  row.reviewed_by_nutritionist_id = null;
+  row.supersedes_food_id = null;
+  row.review_status = row.review_status || 'approved';
+  if (!Array.isArray(row.household_measures)) row.household_measures = [];
+  return row;
+};
+
 const toInsert = foods.filter((f) => !existing.has(String(f.name || '').trim().toLowerCase()));
 console.log('Por insertar:', toInsert.length);
 
 let inserted = 0;
 for (let i = 0; i < toInsert.length; i += BATCH) {
-  const chunk = toInsert.slice(i, i + BATCH).map((food) => {
-    const {
-      id,
-      created_at,
-      updated_at,
-      supersedes_food_id,
-      submitted_by_nutritionist_id,
-      reviewed_by_nutritionist_id,
-      ...rest
-    } = food;
-    return {
-      ...rest,
-      nutritionist_id: null,
-      review_status: rest.review_status || 'approved',
-    };
-  });
+  const chunk = toInsert.slice(i, i + BATCH).map(toCalcRow);
   const res = await fetch(`${DEST_URL}/rest/v1/foods`, {
     method: 'POST',
     headers,
