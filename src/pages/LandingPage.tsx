@@ -8,28 +8,58 @@ const FEATURES = [
     icon: Calculator,
     title: 'Antropometría',
     text: 'IMC, pliegues, composición y riesgos en un flujo claro.',
+    tone: {
+      glow: 'rgba(59, 95, 235, 0.45)',
+      shadow: 'rgba(59, 95, 235, 0.32)',
+      icon: 'linear-gradient(145deg, #5b7cff 0%, #3b5feb 100%)',
+      wash: 'linear-gradient(160deg, #ffffff 0%, #eef2ff 100%)',
+    },
   },
   {
     icon: Flame,
     title: 'Calorías',
     text: 'TMB, NAF y macros listos para orientar la consulta.',
+    tone: {
+      glow: 'rgba(255, 92, 87, 0.42)',
+      shadow: 'rgba(255, 92, 87, 0.3)',
+      icon: 'linear-gradient(145deg, #ff7a6d 0%, #ff5c57 100%)',
+      wash: 'linear-gradient(160deg, #ffffff 0%, #fff1f0 100%)',
+    },
   },
   {
     icon: Activity,
     title: 'Resultados',
     text: 'Diagnóstico escaneable y listo para la consulta.',
+    tone: {
+      glow: 'rgba(22, 163, 74, 0.4)',
+      shadow: 'rgba(22, 163, 74, 0.28)',
+      icon: 'linear-gradient(145deg, #34d399 0%, #16a34a 100%)',
+      wash: 'linear-gradient(160deg, #ffffff 0%, #ecfaed 100%)',
+    },
   },
   {
     icon: RefreshCw,
     title: 'Actualizaciones gratis',
     text: 'Mejoras y nuevas funciones incluidas en tu plan, sin costo extra.',
+    tone: {
+      glow: 'rgba(14, 165, 233, 0.4)',
+      shadow: 'rgba(14, 165, 233, 0.28)',
+      icon: 'linear-gradient(145deg, #38bdf8 0%, #0284c7 100%)',
+      wash: 'linear-gradient(160deg, #ffffff 0%, #e0f2fe 100%)',
+    },
   },
   {
     icon: BookOpen,
     title: 'Material educativo gratis',
     text: 'Recursos editables e imprimibles para apoyar la educación al paciente.',
+    tone: {
+      glow: 'rgba(245, 158, 11, 0.4)',
+      shadow: 'rgba(245, 158, 11, 0.28)',
+      icon: 'linear-gradient(145deg, #fbbf24 0%, #f59e0b 100%)',
+      wash: 'linear-gradient(160deg, #ffffff 0%, #fffbeb 100%)',
+    },
   },
-];
+] as const;
 
 const waHref = `https://wa.me/${LITE_PAYMENT.whatsappNotify}`;
 
@@ -46,7 +76,7 @@ export default function LandingPage() {
         </Link>
       </header>
 
-      <main className="mt-14 flex flex-1 flex-col gap-16 sm:mt-20 lg:gap-20">
+      <main className="mt-14 flex flex-1 flex-col gap-16 sm:mt-20 lg:gap-24">
         <section className="max-w-2xl">
           <h1 className="ng-display text-4xl font-semibold leading-[1.1] tracking-tight text-slate-950 sm:text-5xl">
             La calculadora clínica, limpia y rápida.
@@ -77,25 +107,42 @@ export default function LandingPage() {
         </section>
 
         <section>
-          <h2 className="ng-display text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
-            Todo lo que usas en consulta
-          </h2>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-500 sm:text-base">
-            Funciones pensadas para nutricionistas: rápidas, claras y listas para el día a día.
-          </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(({ icon: Icon, title, text }) => (
-              <article
-                key={title}
-                className="rounded-[1.5rem] border border-brand-500/10 bg-gradient-to-br from-white to-brand-50/40 p-5 shadow-[0_12px_40px_rgba(59,95,235,0.08)]"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-500 text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]">
-                  <Icon className="h-5 w-5" strokeWidth={2} />
-                </span>
-                <h3 className="mt-4 text-base font-bold text-slate-900">{title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{text}</p>
-              </article>
-            ))}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-500">Incluye</p>
+              <h2 className="ng-display mt-1 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+                Todo lo que usas en consulta
+              </h2>
+            </div>
+            <p className="max-w-sm text-sm leading-relaxed text-slate-500">
+              Herramientas claras, rápidas y listas para el día a día del nutricionista.
+            </p>
+          </div>
+
+          <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+            {FEATURES.map(({ icon: Icon, title, text, tone }, index) => {
+              const span = index < 3 ? 'lg:col-span-2' : 'lg:col-span-3';
+              return (
+                <article
+                  key={title}
+                  className={`ng-feature-card ${span}`}
+                  style={{
+                    background: tone.wash,
+                    animationDelay: `${index * 70}ms`,
+                    ['--ng-feature-glow' as string]: tone.glow,
+                    ['--ng-feature-shadow' as string]: tone.shadow,
+                  }}
+                >
+                  <span className="ng-feature-icon" style={{ background: tone.icon }}>
+                    <Icon className="h-5 w-5" strokeWidth={2.1} />
+                  </span>
+                  <h3 className="relative mt-5 text-[1.05rem] font-bold tracking-tight text-slate-900">
+                    {title}
+                  </h3>
+                  <p className="relative mt-2 text-sm leading-relaxed text-slate-500">{text}</p>
+                </article>
+              );
+            })}
           </div>
         </section>
       </main>
