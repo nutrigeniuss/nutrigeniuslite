@@ -27,22 +27,12 @@ export default function ExchangeToolbar({
     <div className="z-30 border-b border-[#e8e5ff] bg-white/82 backdrop-blur-xl shadow-[0_12px_30px_-28px_rgba(59, 95, 235,0.16)]">
       <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
         <div className="flex flex-wrap items-center gap-2">
-          {/* La flecha se metió en esta misma fila y perdió el texto "Volver a
-              Intercambios": una flecha hacia atrás ya se entiende sola, y el
-              rótulo ocupaba una fila entera para sí solo. El texto no se pierde
-              —sigue siendo el nombre accesible y el tooltip—, pero se recuperan
-              unos 50 px de alto, que en un celular son media tabla más a la
-              vista. */}
-          {patientId ? (
-            <BackLink
-              onClick={onBack}
-              label="Volver a Dieta por intercambios"
-              title="Volver a Dieta por intercambios"
-              variant="icon"
-              className="p-1.5"
-              iconOnly
-            />
-          ) : null}
+          <BackLink
+            onClick={onBack}
+            label="Volver a la ficha"
+            className="flex-shrink-0"
+            compact
+          />
 
           {/* "Resumen" vive entre la flecha de volver y la fecha, igual que en
               el editor por alimentos: las dos pantallas se usan seguidas y no

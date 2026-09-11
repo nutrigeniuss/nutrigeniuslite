@@ -124,7 +124,7 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
           </button>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="space-y-3">
           {sorted.map((entry) => {
             const parts = formatDateParts(entry.date);
             const filled = countEntryFilled(entry);
@@ -132,7 +132,7 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
             return (
               <div
                 key={entry.id}
-                className="flex items-center gap-2 rounded-[1.25rem] border border-slate-200/80 bg-white px-4 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] transition hover:border-brand-500/25"
+                className="flex w-full items-center gap-3 rounded-[1.25rem] border border-slate-200/80 bg-white px-4 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] transition hover:border-brand-500/25 sm:px-5"
               >
                 <button type="button" onClick={() => openEntry(entry)} className="min-w-0 flex-1 text-left">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">

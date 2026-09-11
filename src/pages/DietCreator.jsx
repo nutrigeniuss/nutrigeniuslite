@@ -591,7 +591,7 @@ export default function DietCreator() {
   // `beforeunload` del navegador, así que hay que forzar el volcado a mano.
   const handleBackToPatient = () => {
     void flushAutosave();
-    navigate(patientId ? `/app?tab=alimentos` : '/app');
+    navigate('/app');
   };
 
   useEffect(() => {

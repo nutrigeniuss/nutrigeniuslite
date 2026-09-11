@@ -721,7 +721,7 @@ export default function ExchangeDietCreator() {
 
   const handleBackToPatient = async () => {
     void flushAutosave();
-    navigate(patientId ? `/app?tab=intercambios` : '/app');
+    navigate('/app');
   };
 
   return (

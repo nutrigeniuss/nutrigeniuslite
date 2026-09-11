@@ -91,24 +91,13 @@ export default function DietEditorToolbar({
 }) {
   return (
     <header className="flex-shrink-0 flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-6 shadow-sm">
-      {/* Volver a la ficha del paciente. En su día se quitó por redundante
-          —"el sidebar ya permite regresar"—, pero el sidebar se puede plegar a
-          iconos sin rótulo, y entonces esta pantalla se queda sin ninguna
-          salida evidente hacia el paciente del que salió.
-          Misma flecha redonda, mismo sitio y mismo comportamiento que en el
-          editor por intercambios: sin texto (una flecha atrás se entiende
-          sola) para no gastar ancho de la barra, pero con el rótulo vivo como
-          tooltip y como nombre accesible. */}
-      {patientId ? (
-        <BackLink
-          onClick={onBack}
-          label="Volver a Dieta por alimentos"
-          title="Volver a Dieta por alimentos"
-          variant="icon"
-          className="flex-shrink-0 p-1.5"
-          iconOnly
-        />
-      ) : null}
+      {/* Volver siempre visible en Lite Calc (ficha de sesión sin patientId). */}
+      <BackLink
+        onClick={onBack}
+        label="Volver a la ficha"
+        className="flex-shrink-0"
+        compact
+      />
 
       {/* Botón de resumen (solo mobile). */}
       {isMobile ? (
