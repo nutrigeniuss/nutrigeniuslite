@@ -29,3 +29,6 @@ dist-ssr
 
 scripts/tmp/
 
+
+supabase/.temp/
+.cursor/
