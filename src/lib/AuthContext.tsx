@@ -1,9 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, supabaseConfigured } from './supabase';
 import { canUseCalculator, isAdmin, resolveLiteAccess, type LiteAccessProfile, type LiteAccessStatus } from './access';
 import { validatePassword } from './passwordPolicy';
 import { publicSiteUrl } from './publicSite';
+import {
+  ACTIVITY_TOUCH_THROTTLE_MS,
+  clearLastActivity,
+  INACTIVITY_CHECK_INTERVAL_MS,
+  isInactivityExpired,
+  touchLastActivity,
+} from './sessionInactivity';
 
 export type ProfileRow = LiteAccessProfile & {
   id: string;
@@ -57,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(!supabaseConfigured);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const lastTouchRef = useRef(0);
 
   const refreshProfile = useCallback(async () => {
     const uid = (await supabase?.auth.getUser())?.data.user?.id;
@@ -74,18 +82,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
+
+      // Opción A: si la última actividad fue hace ≥1 h (aunque cerraran el navegador), cerrar.
+      if (data.session && isInactivityExpired()) {
+        clearLastActivity();
+        await supabase.auth.signOut();
+        if (cancelled) return;
+        setSession(null);
+        setProfile(null);
+        setReady(true);
+        return;
+      }
+
       setSession(data.session);
       if (data.session?.user) {
+        touchLastActivity();
         setProfile(await fetchProfile(data.session.user.id));
       }
       setReady(true);
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
       if (next?.user) {
+        if (event === 'SIGNED_IN') touchLastActivity();
         void fetchProfile(next.user.id).then(setProfile);
       } else {
+        clearLastActivity();
         setProfile(null);
       }
     });
@@ -95,6 +118,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  // Mientras hay sesión: registrar actividad y cerrar al cumplirse 1 h sin uso.
+  useEffect(() => {
+    if (!session || !supabase) return undefined;
+
+    const markActivity = () => {
+      const now = Date.now();
+      if (now - lastTouchRef.current < ACTIVITY_TOUCH_THROTTLE_MS) return;
+      lastTouchRef.current = now;
+      touchLastActivity(now);
+    };
+
+    const enforceTimeout = () => {
+      if (!isInactivityExpired()) return;
+      clearLastActivity();
+      void supabase.auth.signOut();
+    };
+
+    if (isInactivityExpired()) {
+      enforceTimeout();
+    } else {
+      markActivity();
+    }
+
+    const events: Array<keyof WindowEventMap> = [
+      'pointerdown',
+      'keydown',
+      'scroll',
+      'touchstart',
+      'mousemove',
+    ];
+    for (const event of events) {
+      window.addEventListener(event, markActivity, { passive: true });
+    }
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (isInactivityExpired()) {
+        enforceTimeout();
+        return;
+      }
+      markActivity();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    const timer = window.setInterval(enforceTimeout, INACTIVITY_CHECK_INTERVAL_MS);
+
+    return () => {
+      for (const event of events) {
+        window.removeEventListener(event, markActivity);
+      }
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.clearInterval(timer);
+    };
+  }, [session]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) return { error: 'Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY' };
@@ -133,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    clearLastActivity();
     await supabase?.auth.signOut();
     setProfile(null);
   }, []);
