@@ -156,7 +156,7 @@ function NutrientPicker({ addedKeys, onAdd }) {
   );
 }
 
-export default function FoodFormModal({ food, onClose, onSaved, nutritionistId = undefined }) {
+export default function FoodFormModal({ food, onClose, onSaved, nutritionistId = undefined, onSubmitOverride = undefined, title: titleOverride = undefined }) {
   const editableFood = food ? buildFoodReferenceView(food, REFERENCE_GRAMS) : null;
 
   // Build initial extra nutrients from existing food data
@@ -310,7 +310,9 @@ export default function FoodFormModal({ food, onClose, onSaved, nutritionistId =
     const isRevisionOfApproved = Boolean(nutritionistId) && Boolean(food?.id) && food?.review_status === "approved";
 
     try {
-      if (isRevisionOfApproved) {
+      if (typeof onSubmitOverride === "function") {
+        await onSubmitOverride(data);
+      } else if (isRevisionOfApproved) {
         await createFoodRevision(data, food.id, nutritionistId);
       } else {
         await saveFood(data, food?.id, nutritionistId);
@@ -327,7 +329,12 @@ export default function FoodFormModal({ food, onClose, onSaved, nutritionistId =
     }
     setSaving(false);
     toast(
-      isRevisionOfApproved
+      typeof onSubmitOverride === "function"
+        ? {
+            title: "Alimento incorporado",
+            description: `${trimmedName} quedó en la base maestra.`,
+          }
+        : isRevisionOfApproved
         ? {
             title: "Revisión enviada",
             description: `Tu cambio a "${trimmedName}" quedó pendiente de aprobación. El alimento publicado no se modifica hasta que el administrador lo apruebe.`,
@@ -341,12 +348,14 @@ export default function FoodFormModal({ food, onClose, onSaved, nutritionistId =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col" style={{ maxHeight: "90vh" }}>
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0">
-          <h2 className="font-semibold text-slate-800">{food ? "Editar alimento" : "Nuevo alimento"}</h2>
+          <h2 className="font-semibold text-slate-800">
+            {titleOverride || (food ? "Editar alimento" : "Nuevo alimento")}
+          </h2>
           <button onClick={onClose} className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
             <X className="w-3.5 h-3.5 text-slate-500" />
           </button>

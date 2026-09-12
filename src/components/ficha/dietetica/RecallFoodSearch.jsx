@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Plus, X, Check, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { hydrateFoodNutrients } from "@/lib/catalogData";
-import { prefetchFoodCatalog, readFoodCatalogCache } from "@/lib/foodCatalogCache";
+import { clearFoodCatalogCache, prefetchFoodCatalog, readFoodCatalogCache } from "@/lib/foodCatalogCache";
 import { isFoodVisibleForCountry } from "@/lib/countries";
 import { normalizeSearchText } from "@/lib/searchText";
 import { processFoodsForSearch, getFoodUnits } from "@/lib/foodDisplay";
@@ -14,6 +14,7 @@ import {
   getDefaultQuantityForUnit,
   roundNutritionValue,
 } from "@/components/foods/FoodSearchHelpers";
+import FoodFormModal from "@/components/foods/FoodFormModal";
 import { toast } from "@/components/ui/use-toast";
 import { computeFoodItemFields } from "./recallItemFields";
 import { logger, errorMessage } from '@/lib/logger';
@@ -42,6 +43,7 @@ export default function RecallFoodSearch({ onAdd }) {
   const [offResults, setOffResults] = useState([]);
   const [offLoading, setOffLoading] = useState(false);
   const [offSearched, setOffSearched] = useState(false);
+  const [showCreateFood, setShowCreateFood] = useState(false);
   const searchTimer = useRef(null);
   // Ref para enfocar el input cuando se presiona "/" (mismo atajo que en DietCreator).
   const searchInputRef = useRef(null);
@@ -182,6 +184,7 @@ export default function RecallFoodSearch({ onAdd }) {
           return (
             <button
               key={t.key}
+              type="button"
               onClick={() => setTab(t.key)}
               className={`relative pb-3 pt-1 px-3 text-sm font-semibold flex items-center gap-1.5 transition ${
                 isActive ? "text-brand-500" : "text-slate-500 hover:text-slate-700"
@@ -203,6 +206,16 @@ export default function RecallFoodSearch({ onAdd }) {
             </button>
           );
         })}
+        {tab === "alimentos" ? (
+          <button
+            type="button"
+            onClick={() => setShowCreateFood(true)}
+            className="ml-auto mb-2 inline-flex items-center gap-1 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-600"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Crear alimento
+          </button>
+        ) : null}
       </div>
 
       {/* Search con icono, atajo "/" y botón limpiar — espejo del buscador de dietas. */}
@@ -410,6 +423,23 @@ export default function RecallFoodSearch({ onAdd }) {
           </table>
         </div>
       )}
+
+      {showCreateFood ? (
+        <FoodFormModal
+          food={null}
+          nutritionistId={user?.id}
+          onClose={() => setShowCreateFood(false)}
+          onSaved={() => {
+            setShowCreateFood(false);
+            clearFoodCatalogCache();
+            void prefetchFoodCatalog()
+              .then((next) => setFoods(next || []))
+              .catch((error) => {
+                logger.error('Error refrescando catálogo tras crear alimento', { error: errorMessage(error) });
+              });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

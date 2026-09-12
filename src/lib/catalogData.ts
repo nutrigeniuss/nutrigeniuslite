@@ -1021,6 +1021,7 @@ export const updateFoodReview = async (
   const reviewPayload: Record<string, unknown> = {
     review_status: input.review_status,
     review_notes: input.review_notes ?? null,
+    reviewed_at: new Date().toISOString(),
   };
   if (input.review_status === 'approved') {
     reviewPayload.nutritionist_id = null;
@@ -1038,6 +1039,82 @@ export const updateFoodReview = async (
   }
 
   return { data: data as unknown as CatalogFoodRecord, source: 'supabase' };
+};
+
+const REVIEW_QUEUE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Bandeja Maestro: pendientes / rechazados (rechazados solo últimos 30 días). */
+export const listReviewQueueFoods = async (params: {
+  status: 'pending' | 'rejected';
+  page?: number;
+  pageSize?: number;
+  searchTerm?: string;
+}): Promise<{ data: CatalogFoodRecord[]; total: number; page: number; pageSize: number }> => {
+  const page = params.page ?? 0;
+  const pageSize = params.pageSize ?? 50;
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase
+    .from('foods')
+    .select(FOOD_COLUMNS, { count: 'exact' })
+    .eq('review_status', params.status)
+    .not('nutritionist_id', 'is', null)
+    .order(params.status === 'rejected' ? 'reviewed_at' : 'created_at', { ascending: false })
+    .range(from, to);
+
+  if (params.status === 'rejected') {
+    const since = new Date(Date.now() - REVIEW_QUEUE_RETENTION_MS).toISOString();
+    query = query.gte('reviewed_at', since);
+  }
+
+  if (params.searchTerm?.trim()) {
+    query = query.ilike('name', `%${params.searchTerm.trim()}%`);
+  }
+
+  const { data, count, error } = await query;
+  if (error) throw error;
+
+  const rows = (data as Record<string, unknown>[]) || [];
+  const measuresByFoodId = await loadFoodHouseholdMeasures(
+    rows.map((food) => String(food.id ?? '')).filter(Boolean),
+  );
+
+  return {
+    data: rows.map((food) => normalizeFoodRecord(food, measuresByFoodId ?? undefined)),
+    total: count ?? 0,
+    page,
+    pageSize,
+  };
+};
+
+/**
+ * Maestro corrige e incorpora: inserta copia en catálogo maestro y deja el
+ * original del nutri como privado rechazado (pueden coexistir dos con mismo nombre).
+ */
+export const incorporateEditedFood = async (
+  sourceId: string,
+  editedPayload: CatalogFoodRecord,
+  reviewNotes?: string | null,
+): Promise<{ master: CatalogFoodRecord; source: CatalogFoodRecord }> => {
+  const { id: _omitId, nutritionist_id: _omitOwner, ...rest } = editedPayload;
+  const { data: master } = await saveFood(
+    {
+      ...rest,
+      review_status: 'approved',
+      nutritionist_id: null,
+    },
+    undefined,
+    undefined,
+  );
+
+  const { data: source } = await updateFoodReview(sourceId, {
+    review_status: 'rejected',
+    review_notes: reviewNotes?.trim() || 'Incorporado con correcciones',
+  });
+
+  return { master, source };
 };
 
 export const listRecipes = async (_nutritionistId?: string, _limit?: number): Promise<{ data: CatalogRecipeRecord[]; source: DataSource }> => {

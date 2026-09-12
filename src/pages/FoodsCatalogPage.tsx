@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Download, Trash2, Upload } from 'lucide-react';
 import BackNav from '@/components/BackNav';
+import FoodReviewQueue from '@/components/admin/FoodReviewQueue';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { clearFoodCatalogCache } from '@/lib/foodCatalogCache';
@@ -21,9 +22,12 @@ type FoodRow = {
   nutritionist_id: string | null;
 };
 
-/** Solo Maestro: subir / gestionar la base maestra (JSON → Supabase). */
+type AdminFoodsTab = 'catalog' | 'pending' | 'rejected';
+
+/** Solo Maestro: base maestra + bandeja de revisión. */
 export default function FoodsCatalogPage() {
   const { admin, user } = useAuth();
+  const [tab, setTab] = useState<AdminFoodsTab>('catalog');
   const [foods, setFoods] = useState<FoodRow[]>([]);
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -51,8 +55,8 @@ export default function FoodsCatalogPage() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (tab === 'catalog') void load();
+  }, [load, tab]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -171,95 +175,137 @@ export default function FoodsCatalogPage() {
     URL.revokeObjectURL(url);
   };
 
+  const tabs: { key: AdminFoodsTab; label: string }[] = [
+    { key: 'catalog', label: 'Catálogo' },
+    { key: 'pending', label: 'Pendientes' },
+    { key: 'rejected', label: 'Rechazados' },
+  ];
+
   return (
     <div className="mx-auto min-h-screen max-w-4xl px-4 py-6 sm:px-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <BackNav to="/admin" label="Volver al módulo maestro" />
-          <h1 className="ng-page-title mt-3">Subir base maestra</h1>
+          <h1 className="ng-page-title mt-3">Base de alimentos</h1>
           <p className="ng-muted mt-1">
-            Catálogo común para todos los nutricionistas.
+            Catálogo maestro y revisión de aportes de nutricionistas.
           </p>
         </div>
-        <button type="button" onClick={downloadExample} className="ng-btn-ghost">
-          <Download className="h-3.5 w-3.5" /> Ejemplo JSON
-        </button>
+        {tab === 'catalog' ? (
+          <button type="button" onClick={downloadExample} className="ng-btn-ghost">
+            <Download className="h-3.5 w-3.5" /> Ejemplo JSON
+          </button>
+        ) : null}
+      </div>
+
+      <div className="mb-5 flex gap-1 border-b border-slate-200">
+        {tabs.map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => {
+                setTab(t.key);
+                setMessage(null);
+                setError(null);
+              }}
+              className={`relative px-3 pb-3 pt-1 text-sm font-semibold transition ${
+                active ? 'text-brand-500' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {t.label}
+              {active ? <span className="absolute -bottom-px left-2 right-2 h-0.5 rounded-t bg-brand-500" /> : null}
+            </button>
+          );
+        })}
       </div>
 
       {message ? <p className="mb-3 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
       {error ? <p className="mb-3 rounded-2xl bg-coral-50 px-4 py-3 text-sm text-coral-600">{error}</p> : null}
 
-      <section className="ng-card mb-5 p-4 sm:p-5">
-        <p className="ng-section-title">Importar Excel (plantilla oficial)</p>
-        <p className="ng-muted mt-1">
-          Misma plantilla del SaaS. Filas repetidas = medidas caseras. Si el nombre ya existe se reemplaza; si no, se agrega.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <label className={`ng-btn-primary cursor-pointer ${busy ? 'opacity-50' : ''}`}>
-            <Upload className="h-3.5 w-3.5" /> Subir .xlsx
-            <input
-              type="file"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              className="hidden"
-              disabled={busy}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void onImportXlsx(file);
-                e.target.value = '';
-              }}
-            />
-          </label>
-        </div>
-        {progress ? <p className="ng-muted mt-2">{progress}</p> : null}
-      </section>
-
-      <section className="ng-card mb-5 p-4 sm:p-5">
-        <p className="ng-section-title">Importar JSON</p>
-        <p className="ng-muted mt-1">
-          name, calories, protein, carbs, fat, portion_grams, category (opcional).
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <label className={`ng-btn-primary cursor-pointer ${busy ? 'opacity-50' : ''}`}>
-            <Upload className="h-3.5 w-3.5" /> Reemplazar maestros
-            <input type="file" accept="application/json,.json" className="hidden" disabled={busy} onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void onImportFile(file, 'replace');
-              e.target.value = '';
-            }} />
-          </label>
-          <label className={`ng-btn-ghost cursor-pointer ${busy ? 'opacity-50' : ''}`}>
-            <Upload className="h-3.5 w-3.5" /> Fusionar
-            <input type="file" accept="application/json,.json" className="hidden" disabled={busy} onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void onImportFile(file, 'merge');
-              e.target.value = '';
-            }} />
-          </label>
-        </div>
-      </section>
-
-      <section className="ng-card p-4 sm:p-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="ng-section-title">{foods.length} alimentos maestros</p>
-          <input className="ng-input !mt-0 !w-auto rounded-full px-3 py-1.5 text-xs" placeholder="Filtrar…" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </div>
-        <div className="max-h-[28rem] space-y-2 overflow-y-auto">
-          {filtered.map((food) => (
-            <div key={food.id} className="flex items-start justify-between gap-3 rounded-2xl bg-[#fafbfd] px-3 py-2.5">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{food.name}</p>
-                <p className="ng-muted">
-                  {food.category || 'Sin categoría'} · {food.portion_grams || 100}g · {food.calories || 0} kcal · P{food.protein || 0} C{food.carbs || 0} G{food.fat || 0}
-                </p>
-              </div>
-              <button type="button" className="rounded-full p-2 text-coral-500 hover:bg-white disabled:opacity-50" disabled={busy} onClick={() => void removeFood(food)} aria-label={`Eliminar ${food.name}`}>
-                <Trash2 className="h-4 w-4" />
-              </button>
+      {tab === 'pending' || tab === 'rejected' ? (
+        <FoodReviewQueue
+          status={tab}
+          onBusyChange={setBusy}
+          onError={setError}
+          onMessage={setMessage}
+        />
+      ) : (
+        <>
+          <section className="ng-card mb-5 p-4 sm:p-5">
+            <p className="ng-section-title">Importar Excel (plantilla oficial)</p>
+            <p className="ng-muted mt-1">
+              Misma plantilla del SaaS. Filas repetidas = medidas caseras. Si el nombre ya existe se reemplaza; si no, se agrega.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <label className={`ng-btn-primary cursor-pointer ${busy ? 'opacity-50' : ''}`}>
+                <Upload className="h-3.5 w-3.5" /> Subir .xlsx
+                <input
+                  type="file"
+                  accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  className="hidden"
+                  disabled={busy}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void onImportXlsx(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
             </div>
-          ))}
-          {filtered.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">Sin base maestra todavía</p> : null}
-        </div>
-      </section>
+            {progress ? <p className="ng-muted mt-2">{progress}</p> : null}
+          </section>
+
+          <section className="ng-card mb-5 p-4 sm:p-5">
+            <p className="ng-section-title">Importar JSON</p>
+            <p className="ng-muted mt-1">
+              name, calories, protein, carbs, fat, portion_grams, category (opcional).
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <label className={`ng-btn-primary cursor-pointer ${busy ? 'opacity-50' : ''}`}>
+                <Upload className="h-3.5 w-3.5" /> Reemplazar maestros
+                <input type="file" accept="application/json,.json" className="hidden" disabled={busy} onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void onImportFile(file, 'replace');
+                  e.target.value = '';
+                }} />
+              </label>
+              <label className={`ng-btn-ghost cursor-pointer ${busy ? 'opacity-50' : ''}`}>
+                <Upload className="h-3.5 w-3.5" /> Fusionar
+                <input type="file" accept="application/json,.json" className="hidden" disabled={busy} onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void onImportFile(file, 'merge');
+                  e.target.value = '';
+                }} />
+              </label>
+            </div>
+          </section>
+
+          <section className="ng-card p-4 sm:p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="ng-section-title">{foods.length} alimentos maestros</p>
+              <input className="ng-input !mt-0 !w-auto rounded-full px-3 py-1.5 text-xs" placeholder="Filtrar…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            </div>
+            <div className="max-h-[28rem] space-y-2 overflow-y-auto">
+              {filtered.map((food) => (
+                <div key={food.id} className="flex items-start justify-between gap-3 rounded-2xl bg-[#fafbfd] px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{food.name}</p>
+                    <p className="ng-muted">
+                      {food.category || 'Sin categoría'} · {food.portion_grams || 100}g · {food.calories || 0} kcal · P{food.protein || 0} C{food.carbs || 0} G{food.fat || 0}
+                    </p>
+                  </div>
+                  <button type="button" className="rounded-full p-2 text-coral-500 hover:bg-white disabled:opacity-50" disabled={busy} onClick={() => void removeFood(food)} aria-label={`Eliminar ${food.name}`}>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              {filtered.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">Sin base maestra todavía</p> : null}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }
