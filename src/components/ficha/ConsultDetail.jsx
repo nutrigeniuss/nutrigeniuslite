@@ -266,7 +266,7 @@ export default function ConsultDetail({
         </div>
       ) : null}
 
-      <div className="mb-5 flex items-center gap-2.5 overflow-x-auto overflow-y-hidden border-b border-slate-200/70 px-0.5 pb-4 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
+      <div className="sticky top-[3.25rem] z-20 -mx-0.5 mb-3 flex items-center gap-2 overflow-x-auto overflow-y-hidden border-b border-slate-200/70 bg-[#f4f6fb]/95 px-0.5 py-2.5 backdrop-blur-md [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden sm:static sm:top-auto sm:mb-5 sm:bg-transparent sm:py-0 sm:pb-4 sm:backdrop-blur-none">
         {!embedded ? (
           <div className="hidden flex-shrink-0 items-center pr-2 md:flex">
             <button type="button" onClick={() => void handleBack()} className="ng-back">
@@ -282,7 +282,7 @@ export default function ConsultDetail({
               key={group.key}
               type="button"
               onClick={() => setTabIdx(groupTabIdxs[0])}
-              className={`shrink-0 ${isGroupActive ? pillActive : pillIdle}`}
+              className={`shrink-0 touch-manipulation ${isGroupActive ? pillActive : pillIdle}`}
             >
               {group.label}
             </button>
@@ -315,7 +315,7 @@ export default function ConsultDetail({
       }>
         {DIET_TABS.has(tab) ? (
           <div className={shellClass}>
-            <div className="flex gap-2.5 overflow-x-auto border-b border-slate-100 bg-[#fafbfd] px-4 py-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex gap-2 overflow-x-auto border-b border-slate-100 bg-[#fafbfd] px-3 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2.5 sm:px-4 sm:py-3.5">
               {GROUPS.find((g) => g.key === "dieta")?.tabs.map((t) => {
                 const i = TAB_KEYS.indexOf(t.key);
                 const isActive = i === tabIdx;
@@ -324,7 +324,7 @@ export default function ConsultDetail({
                     key={t.key}
                     type="button"
                     onClick={() => setTabIdx(i)}
-                    className={`shrink-0 ${isActive ? pillActive : pillIdle}`}
+                    className={`shrink-0 touch-manipulation ${isActive ? pillActive : pillIdle}`}
                   >
                     {t.label}
                   </button>

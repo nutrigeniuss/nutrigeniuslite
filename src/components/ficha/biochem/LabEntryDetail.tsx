@@ -166,13 +166,13 @@ export default function LabEntryDetail({
     <div className="w-full min-w-0">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <BackLink onClick={handleBack} label="Volver a Bioquímica" className="self-start" />
+          <BackLink onClick={handleBack} label="Volver" className="self-start" />
           <div className="min-w-0">
             <h2 className="text-base font-bold leading-tight text-slate-900 sm:text-[1.05rem]">
               {formatLongDate(data.date)}
             </h2>
             <p className="ng-muted mt-0.5">
-              {totals.filled} {totals.filled === 1 ? 'análisis registrado' : 'análisis registrados'}
+              Calculadora temporal · {totals.filled} {totals.filled === 1 ? 'análisis' : 'análisis'}
               {totals.out > 0 ? (
                 <span className="ml-1.5 font-semibold text-red-500">· {totals.out} fuera de rango</span>
               ) : null}
@@ -224,7 +224,7 @@ export default function LabEntryDetail({
                 key={item.key}
                 type="button"
                 onClick={() => setActivePanel(item.key)}
-                className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition-all sm:gap-2.5 sm:px-3.5 sm:text-sm lg:w-full lg:flex-shrink ${
+                className={`flex min-h-11 flex-shrink-0 touch-manipulation items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-left text-[13px] font-semibold transition-all sm:gap-2.5 sm:text-sm lg:w-full lg:flex-shrink ${
                   isActive
                     ? 'bg-brand-500 text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]'
                     : 'text-slate-500 hover:bg-white hover:text-slate-800'
@@ -249,7 +249,7 @@ export default function LabEntryDetail({
           <button
             type="button"
             onClick={() => setActivePanel(INDICES_KEY)}
-            className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition-all sm:gap-2.5 sm:px-3.5 sm:text-sm lg:w-full lg:flex-shrink ${
+            className={`flex min-h-11 flex-shrink-0 touch-manipulation items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-left text-[13px] font-semibold transition-all sm:gap-2.5 sm:text-sm lg:w-full lg:flex-shrink ${
               showingIndices
                 ? 'bg-brand-500 text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]'
                 : 'text-slate-500 hover:bg-white hover:text-slate-800'

@@ -494,18 +494,42 @@ export default function DietPrintView({ title, date, patientName, meals, targetC
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
           }
           .print-sheet {
             background: white;
-            width: 210mm;
-            min-height: 297mm;
-            padding: 24mm 20mm 20mm;
+            width: min(210mm, calc(100vw - 1.5rem));
+            max-width: 100%;
+            min-height: 0;
+            padding: clamp(14px, 4vw, 24mm) clamp(12px, 3.5vw, 20mm) clamp(14px, 3vw, 20mm);
             box-sizing: border-box;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             border-radius: 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
           }
           .print-sheet + .print-sheet {
             margin-top: 24px;
+          }
+          .print-toolbar-mobile {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+          }
+          .print-toolbar-mobile .print-toolbar-title {
+            order: 3;
+            flex: 1 1 100%;
+            text-align: center;
+            font-size: 0.75rem;
+          }
+          @media (min-width: 640px) {
+            .print-toolbar-mobile .print-toolbar-title {
+              order: 0;
+              flex: 1 1 auto;
+              font-size: 0.875rem;
+            }
           }
         }
         /* On print: hide every body child EXCEPT our portal-rendered
@@ -548,17 +572,19 @@ export default function DietPrintView({ title, date, patientName, meals, targetC
       `}</style>
 
       <div className="print-overlay fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm overflow-y-auto py-8">
-        <div className="no-print fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3">
-          <BackLink onClick={onClose} label="Cerrar vista previa" variant="overlay-close" compact />
-          <div className="flex-1" />
-          <span className="text-sm font-semibold text-slate-700">{title} · {formattedDate}</span>
-          <div className="flex-1" />
-          <button onClick={handlePrint} className="flex items-center gap-2 text-sm font-semibold bg-brand-500 hover:bg-brand-600 text-white px-5 py-2 rounded-xl shadow transition-colors">
-            🖨️ Imprimir / Guardar PDF
+        <div className="no-print print-toolbar-mobile fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-sm px-3 py-3 sm:px-6 flex items-center gap-2 sm:gap-3">
+          <BackLink onClick={onClose} label="Cerrar" variant="overlay-close" compact />
+          <span className="print-toolbar-title text-sm font-semibold text-slate-700 truncate">{title} · {formattedDate}</span>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="ml-auto flex min-h-11 touch-manipulation items-center gap-2 text-sm font-semibold bg-brand-500 hover:bg-brand-600 text-white px-3 sm:px-5 py-2 rounded-xl shadow transition-colors"
+          >
+            🖨️ <span className="sm:hidden">PDF</span><span className="hidden sm:inline">Imprimir / Guardar PDF</span>
           </button>
         </div>
 
-        <div className="mt-16 no-print" />
+        <div className="mt-20 sm:mt-16 no-print" />
         <div className="print-sheet">
           <DayPrint title={title} date={date} patientName={patientName} meals={meals} targetCalories={targetCalories} brandLogoUrl={brandLogoUrl} brandName={brandName} />
         </div>

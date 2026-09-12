@@ -17,7 +17,6 @@ import { deriveDietaryRestrictions } from "@/lib/dietaryRestrictions";
 import ActiveMealCard from "@/components/diet/ActiveMealCard";
 import MealTabsNav from "@/components/diet/MealTabsNav";
 import DietEditorToolbar from "@/components/diet/DietEditorToolbar";
-import SaveToCatalogModal from "@/components/diet/SaveToCatalogModal";
 import MacroEditorModal from "@/components/diet/MacroEditorModal";
 import RecallFoodSearch from "@/components/ficha/dietetica/RecallFoodSearch";
 import { todayLocalDateStr } from "@/lib/weekRange";
@@ -92,10 +91,6 @@ export default function DietCreator() {
   const [activeMealId, setActiveMealId]       = useState(DEFAULT_MEALS[0].id);
   const [saving, setSaving]                   = useState(false);
   const [showPrint, setShowPrint]             = useState(false);
-  const [showCatalogModal, setShowCatalogModal] = useState(false);
-  const [catalogTitle, setCatalogTitle]         = useState("");
-  const [savingCatalog, setSavingCatalog]       = useState(false);
-  const [savedCatalog, setSavedCatalog]         = useState(false);
   const [currentPlanId, setCurrentPlanId]       = useState(initialPlanId);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
   // Lite excludes clinical AI assistant — no showAssistant state.
@@ -460,40 +455,6 @@ export default function DietCreator() {
     });
   };
 
-  const handleSaveToCatalog = async () => {
-    if (!catalogTitle.trim()) return;
-    setSavingCatalog(true);
-    const { error } = await supabase.from("diet_plans").insert([{
-      nutritionist_id: user?.id || null,
-      title: catalogTitle.trim(),
-      patient_id: null,
-      patient_name: "",
-      date,
-      target_calories: macros.calories,
-      target_protein: macros.protein,
-      target_carbs: macros.carbs,
-      target_fat: macros.fat,
-      meals,
-      is_catalog: true,
-    }]);
-
-    if (error) {
-      logger.error('Error guardando plan en catálogo', { error: errorMessage(error) });
-      setSavingCatalog(false);
-      toast({
-        title: "No se pudo guardar en catálogo",
-        description: error.message || "Intenta nuevamente.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSavingCatalog(false);
-    setSavedCatalog(true);
-    toast({ title: "Dieta guardada en catálogo", description: "La dieta quedó disponible en Mis Dietas." });
-    setTimeout(() => { setSavedCatalog(false); setShowCatalogModal(false); setCatalogTitle(""); }, 2000);
-  };
-
   const persistPlan = useCallback(async (origin = "manual") => {
     if (isSavingRef.current || (origin === "autosave" && !hasPersistableContent)) {
       return false;
@@ -750,7 +711,6 @@ export default function DietCreator() {
           macroEditorDisabled={!patientRecord}
           restrictions={dietaryRestrictions}
           onPrint={openPrintPreview}
-          onSaveToCatalog={() => { setCatalogTitle(title); setShowCatalogModal(true); }}
           readOnly={isInspecting}
         />
 
@@ -845,17 +805,6 @@ export default function DietCreator() {
           onClose={() => setShowPrint(false)} />
       )}
 
-      {/* Catalog save modal */}
-      <SaveToCatalogModal
-        open={showCatalogModal}
-        value={catalogTitle}
-        onChange={setCatalogTitle}
-        onSave={handleSaveToCatalog}
-        onClose={() => { setShowCatalogModal(false); setCatalogTitle(""); }}
-        saving={savingCatalog}
-        saved={savedCatalog}
-      />
-
       {/* Nutrient Inspector — overlay panel. Re-derives from `meals` on
           every change so qty/unit edits while the panel is open are
           reflected immediately. */}
@@ -873,11 +822,12 @@ export default function DietCreator() {
             <button
               type="button"
               onClick={() => setFoodModalOpen(true)}
-              className="fixed z-40 bottom-24 right-6 inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-xl shadow-brand-500/30 transition-all hover:bg-brand-600 hover:scale-105"
+              className="fixed z-40 bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-4 inline-flex min-h-12 touch-manipulation items-center gap-2 rounded-full bg-brand-500 px-4 py-3 text-sm font-bold text-white shadow-xl shadow-brand-500/30 transition-all hover:bg-brand-600 active:scale-95 sm:bottom-24 sm:right-6 sm:px-5"
               aria-label="Agregar alimento al tiempo de comida"
             >
               <Plus className="w-4 h-4" />
-              Agregar alimento
+              <span className="sm:hidden">Agregar</span>
+              <span className="hidden sm:inline">Agregar alimento</span>
             </button>
           ) : null}
 

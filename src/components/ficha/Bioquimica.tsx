@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlaskConical, Pencil, Plus, Trash2 } from 'lucide-react';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
-import { toast } from '@/components/ui/use-toast';
 import { relativeDayLabel } from '@/lib/relativeDay';
 import LabEntryDetail, { type BiochemPatientContext } from './biochem/LabEntryDetail';
 import NewLabModal from './biochem/NewLabModal';
@@ -24,10 +23,21 @@ type BioquimicaProps = {
 const pillActive = 'ng-pill ng-pill-active';
 const pillIdle = 'ng-pill ng-pill-idle';
 
+const todayISO = (): string => new Date().toISOString().slice(0, 10);
+
 const newEntryId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
   return `lab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 };
+
+const createDraftEntry = (): LabEntry => ({
+  id: newEntryId(),
+  date: todayISO(),
+  lab: null,
+  values: {},
+  ranges: {},
+  created_at: new Date().toISOString(),
+});
 
 const formatDateParts = (dateStr?: string | null): { day: string; monthYear: string; relative: string } => {
   if (!dateStr) return { day: '—', monthYear: '—', relative: '' };
@@ -44,11 +54,13 @@ const formatDateParts = (dateStr?: string | null): { day: string; monthYear: str
 /**
  * Bioquímica Lite = calculadora en memoria.
  * No escribe `biochemistry` en la ficha / localStorage.
+ * Entra directo al formulario (sin pantalla vacía de “Agregar toma”).
  */
 export default function Bioquimica({ patient, onUpdate, registerAutosave }: BioquimicaProps) {
-  const [entries, setEntries] = useState<LabEntry[]>([]);
+  const [entries, setEntries] = useState<LabEntry[]>(() => [createDraftEntry()]);
   const [showNew, setShowNew] = useState(false);
-  const [selected, setSelected] = useState<number | null>(null);
+  // Abre de inmediato el detalle: evita la expectativa de “historial guardable”.
+  const [selected, setSelected] = useState<number | null>(0);
   const [entryToDelete, setEntryToDelete] = useState<LabEntry | null>(null);
   const detailAutosaveRef = useRef<(() => Promise<void>) | null>(null);
   const { ranges: accountRanges, saveRange } = useLabReferenceRanges();
@@ -118,8 +130,8 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
           <div>
             <h3 className="ng-display text-lg font-semibold tracking-tight text-slate-900">Bioquímica</h3>
             <p className="ng-muted mt-0.5">
-              Solo cálculo temporal · se pierde al cambiar de pestaña
-              {entries.length > 0 ? ` · ${entries.length} toma${entries.length === 1 ? '' : 's'} ahora` : ''}
+              Calculadora temporal · no se guarda en la ficha
+              {entries.length > 0 ? ` · ${entries.length} toma${entries.length === 1 ? '' : 's'} en pantalla` : ''}
             </p>
           </div>
         </div>
@@ -132,9 +144,17 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
         <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-[#fafbfd] px-5 py-14 text-center">
           <FlaskConical className="mx-auto h-8 w-8 text-slate-300" />
           <p className="mt-3 text-sm font-semibold text-slate-600">Sin exámenes en pantalla</p>
-          <p className="ng-muted mt-1">No se guarda: al cambiar de pestaña o refrescar, queda vacío.</p>
-          <button type="button" onClick={() => setShowNew(true)} className="ng-btn-primary mt-4">
-            <Plus className="h-3.5 w-3.5" /> Agregar toma
+          <p className="ng-muted mt-1">Solo cálculo temporal: al cambiar de pestaña se limpia.</p>
+          <button
+            type="button"
+            onClick={() => {
+              const draft = createDraftEntry();
+              setEntries([draft]);
+              setSelected(0);
+            }}
+            className="ng-btn-primary mt-4"
+          >
+            <Plus className="h-3.5 w-3.5" /> Abrir calculadora
           </button>
         </div>
       ) : (
@@ -196,7 +216,6 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
             setEntries((prev) => [newEntry, ...prev]);
             setShowNew(false);
             setSelected(0);
-            toast({ title: 'Listo para calcular', description: 'Temporal: no se guarda al salir de Bioquímica.' });
           }}
         />
       ) : null}
@@ -209,7 +228,16 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
         confirmLabel="Quitar"
         onConfirm={() => {
           if (!entryToDelete) return;
-          setEntries((prev) => prev.filter((e) => e.id !== entryToDelete.id));
+          setEntries((prev) => {
+            const next = prev.filter((e) => e.id !== entryToDelete.id);
+            if (next.length === 0) {
+              // Mantener siempre una toma lista para calcular.
+              const draft = createDraftEntry();
+              setSelected(0);
+              return [draft];
+            }
+            return next;
+          });
           setEntryToDelete(null);
         }}
       />

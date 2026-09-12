@@ -29,6 +29,8 @@ export function openHtmlPrintPreview({
   title = 'Vista previa del reporte',
   downloadName = 'reporte.html',
 }: OpenHtmlPrintPreviewOptions): boolean {
+  let blobUrl: string | null = null;
+
   try {
     removeExistingOverlay();
 
@@ -47,7 +49,8 @@ export function openHtmlPrintPreview({
           background: rgba(15, 23, 42, 0.55);
           backdrop-filter: blur(4px);
           overflow: auto;
-          padding: 5.5rem 1rem 2rem;
+          -webkit-overflow-scrolling: touch;
+          padding: 5rem 0.75rem 1.5rem;
           box-sizing: border-box;
         }
         #${OVERLAY_ID} .ng-print-toolbar {
@@ -57,25 +60,44 @@ export function openHtmlPrintPreview({
           right: 0;
           z-index: 100000;
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1.25rem;
+          gap: 0.5rem;
+          padding: 0.65rem 0.75rem;
           background: #fff;
           border-bottom: 1px solid #e2e8f0;
           box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
         }
         #${OVERLAY_ID} .ng-print-toolbar .ng-print-title {
-          flex: 1;
+          flex: 1 1 100%;
+          order: 3;
           text-align: center;
-          font: 600 0.875rem/1.25 system-ui, sans-serif;
+          font: 600 0.75rem/1.25 system-ui, sans-serif;
           color: #334155;
+        }
+        @media (min-width: 640px) {
+          #${OVERLAY_ID} {
+            padding: 5.5rem 1rem 2rem;
+          }
+          #${OVERLAY_ID} .ng-print-toolbar {
+            flex-wrap: nowrap;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+          }
+          #${OVERLAY_ID} .ng-print-toolbar .ng-print-title {
+            flex: 1 1 auto;
+            order: 0;
+            font-size: 0.875rem;
+          }
         }
         #${OVERLAY_ID} .ng-print-toolbar button {
           font: 600 0.8125rem/1 system-ui, sans-serif;
           border-radius: 0.75rem;
-          padding: 0.55rem 1rem;
+          padding: 0.65rem 0.9rem;
+          min-height: 2.75rem;
           cursor: pointer;
           border: 0;
+          touch-action: manipulation;
         }
         #${OVERLAY_ID} .ng-print-close {
           background: transparent;
@@ -83,6 +105,7 @@ export function openHtmlPrintPreview({
         }
         #${OVERLAY_ID} .ng-print-close:hover { color: #3b5feb; }
         #${OVERLAY_ID} .ng-print-go {
+          margin-left: auto;
           background: #3b5feb;
           color: #fff;
           box-shadow: 0 8px 18px rgba(59, 95, 235, 0.22);
@@ -99,7 +122,7 @@ export function openHtmlPrintPreview({
         #${OVERLAY_ID} iframe {
           display: block;
           width: 100%;
-          min-height: 297mm;
+          min-height: 70vh;
           border: 0;
           background: #fff;
         }
@@ -123,9 +146,9 @@ export function openHtmlPrintPreview({
         }
       </style>
       <div class="ng-print-toolbar">
-        <button type="button" class="ng-print-close" data-ng-print-close>Cerrar vista previa</button>
+        <button type="button" class="ng-print-close" data-ng-print-close>Cerrar</button>
         <div class="ng-print-title"></div>
-        <button type="button" class="ng-print-go" data-ng-print-go>Imprimir / Guardar PDF</button>
+        <button type="button" class="ng-print-go" data-ng-print-go>Imprimir / PDF</button>
       </div>
       <div class="ng-print-sheet">
         <iframe title="${title.replace(/"/g, '')}"></iframe>
@@ -139,11 +162,19 @@ export function openHtmlPrintPreview({
     if (!(iframe instanceof HTMLIFrameElement)) {
       throw new Error('No se pudo crear la vista previa');
     }
-    iframe.srcdoc = html;
+
+    // Blob URL es más fiable que srcdoc en algunos WebView/Android.
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    blobUrl = URL.createObjectURL(blob);
+    iframe.src = blobUrl;
 
     const close = () => {
       overlay.remove();
       document.removeEventListener('keydown', onKey);
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+        blobUrl = null;
+      }
     };
 
     const onKey = (event: KeyboardEvent) => {
@@ -156,17 +187,17 @@ export function openHtmlPrintPreview({
         const body = doc?.body;
         const root = doc?.documentElement;
         if (!body || !root) return;
-        const height = Math.max(body.scrollHeight, root.scrollHeight, 400);
+        const height = Math.max(body.scrollHeight, root.scrollHeight, window.innerHeight * 0.7);
         iframe.style.height = `${height + 24}px`;
       } catch {
-        /* cross-origin no aplica con srcdoc */
+        iframe.style.height = `${Math.max(window.innerHeight * 0.75, 480)}px`;
       }
     };
 
     iframe.addEventListener('load', () => {
       resizeIframe();
-      // Segunda pasada por si fuentes/imágenes cambian la altura.
-      setTimeout(resizeIframe, 200);
+      setTimeout(resizeIframe, 150);
+      setTimeout(resizeIframe, 500);
     });
 
     overlay.querySelector('[data-ng-print-close]')?.addEventListener('click', close);
@@ -181,8 +212,11 @@ export function openHtmlPrintPreview({
 
     document.addEventListener('keydown', onKey);
     document.body.appendChild(overlay);
+    // Si load tarda, al menos se ve el marco.
+    setTimeout(resizeIframe, 50);
     return true;
   } catch {
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
     try {
       const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);

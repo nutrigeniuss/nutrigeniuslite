@@ -21,7 +21,14 @@ function isIos(): boolean {
  * CTA para instalar Lite como acceso directo (PWA).
  * Chrome/Android: beforeinstallprompt. iOS: instrucción Compartir → Añadir a inicio.
  */
-export default function InstallAppButton({ className = '' }: { className?: string }) {
+export default function InstallAppButton({
+  className = '',
+  compact = false,
+}: {
+  className?: string;
+  /** En móvil: solo icono para no apretar el header. */
+  compact?: boolean;
+}) {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [standalone, setStandalone] = useState(false);
   const [iosHint, setIosHint] = useState(false);
@@ -75,10 +82,12 @@ export default function InstallAppButton({ className = '' }: { className?: strin
         type="button"
         onClick={() => void handleClick()}
         disabled={busy}
-        className="ng-btn-ghost"
+        aria-label={busy ? 'Instalando' : 'Instalar app'}
+        title={busy ? 'Instalando…' : 'Instalar app'}
+        className={compact ? 'ng-btn-ghost !min-h-11 !w-11 !px-0' : 'ng-btn-ghost'}
       >
-        {showIos ? <Share className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
-        {busy ? 'Instalando…' : 'Instalar app'}
+        {showIos ? <Share className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+        {compact ? null : busy ? 'Instalando…' : 'Instalar app'}
       </button>
       {iosHint ? (
         <div className="absolute right-0 top-full z-40 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-3 text-left text-[11px] leading-relaxed text-slate-600 shadow-lg">
@@ -90,7 +99,7 @@ export default function InstallAppButton({ className = '' }: { className?: strin
           </ol>
           <button
             type="button"
-            className="mt-2 text-[11px] font-semibold text-brand-500"
+            className="mt-2 min-h-11 text-[11px] font-semibold text-brand-500"
             onClick={() => setIosHint(false)}
           >
             Entendido

@@ -176,13 +176,13 @@ export default function Recall24hEditor({
         ) : null}
       </div>
 
-      <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="sticky top-0 z-10 -mx-1 mb-4 flex items-center gap-2 overflow-x-auto bg-white/95 px-1 py-2 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {meals.map((m) => (
           <button
             key={m.id}
             type="button"
             onClick={() => setActiveMealId(m.id)}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 py-1.5 text-xs font-semibold transition ${
+            className={`flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3.5 py-2 text-xs font-semibold transition touch-manipulation ${
               activeMealId === m.id
                 ? "bg-brand-500 text-white shadow-sm"
                 : "bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -203,7 +203,7 @@ export default function Recall24hEditor({
         <button
           type="button"
           onClick={addMeal}
-          className="flex items-center gap-1 whitespace-nowrap rounded-[10px] px-3 py-1.5 text-xs font-semibold text-brand-500 transition hover:bg-brand-50"
+          className="flex min-h-11 items-center gap-1 whitespace-nowrap rounded-[10px] px-3.5 py-2 text-xs font-semibold text-brand-500 transition hover:bg-brand-50 touch-manipulation"
         >
           <Plus className="h-3.5 w-3.5" /> Añadir
         </button>

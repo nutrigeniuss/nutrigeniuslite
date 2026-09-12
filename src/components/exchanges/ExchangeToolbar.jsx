@@ -1,6 +1,76 @@
-import React from "react";
-import { Printer, SlidersHorizontal } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Printer, SlidersHorizontal, MoreHorizontal, ChevronDown } from "lucide-react";
 import BackLink from "@/components/ui/back-link";
+
+function MobileActionsMenu({ patientId, patientRecord, onShowMacroEditor, onPrint }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    };
+    const onKey = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const run = (action) => {
+    setOpen(false);
+    action?.();
+  };
+
+  return (
+    <div className="relative z-30 sm:hidden" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="inline-flex min-h-11 touch-manipulation items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+        Opciones
+        <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.35)]"
+        >
+          {patientId ? (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={!patientRecord}
+              onClick={() => run(onShowMacroEditor)}
+              className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-slate-500" />
+              Macronutrientes
+            </button>
+          ) : null}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => run(onPrint)}
+            className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <Printer className="h-4 w-4 text-slate-500" />
+            Imprimir
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 // Barra superior del editor por intercambios: volver, resumen, fecha,
 // conmutador de pestañas (tabla / alimentos) y acciones (macros, imprimir).
@@ -29,25 +99,22 @@ export default function ExchangeToolbar({
         <div className="flex flex-wrap items-center gap-2">
           <BackLink
             onClick={onBack}
-            label="Volver a la ficha"
-            className="flex-shrink-0"
+            label={isMobile ? "Volver" : "Volver a la ficha"}
+            className="relative z-30 min-h-11 flex-shrink-0 touch-manipulation"
             compact
           />
 
-          {/* "Resumen" vive entre la flecha de volver y la fecha, igual que en
-              el editor por alimentos: las dos pantallas se usan seguidas y no
-              tiene sentido que el mismo botón esté en sitios distintos. */}
           {isMobile ? (
             <button
               type="button"
               onClick={onShowMobileSummary}
-              className="flex h-[31px] items-center gap-1.5 rounded-full border border-[#e8e4fb] bg-white px-3.5 text-xs font-semibold text-slate-600 shadow-sm shadow-slate-200/20 transition-colors hover:bg-slate-50"
+              className="flex min-h-11 items-center gap-1.5 rounded-full border border-[#e8e4fb] bg-white px-3.5 text-xs font-semibold text-slate-600 shadow-sm shadow-slate-200/20 transition-colors hover:bg-slate-50"
             >
               Resumen
             </button>
           ) : null}
 
-          <div className="flex h-[31px] items-center gap-2 rounded-full border border-[#e5e3ff] bg-[#f7f6ff] px-3 shadow-sm shadow-slate-200/20">
+          <div className="flex min-h-11 items-center gap-2 rounded-full border border-[#e5e3ff] bg-[#f7f6ff] px-3 shadow-sm shadow-slate-200/20 sm:h-[31px] sm:min-h-0">
             <span className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6860c7] sm:inline">Fecha</span>
             <input
               type="date"
@@ -56,48 +123,43 @@ export default function ExchangeToolbar({
               className="rounded-full bg-transparent px-1 py-0 text-sm font-semibold text-slate-700 outline-none"
             />
           </div>
+
+          <MobileActionsMenu
+            patientId={patientId}
+            patientRecord={patientRecord}
+            onShowMacroEditor={onShowMacroEditor}
+            onPrint={onPrint}
+          />
         </div>
 
-        {/* `min-w-max` + `whitespace-nowrap` + `px-7` daban unos 544 px para las
-            dos pestañas: en un celular de 375 px la segunda quedaba cortada y
-            sin forma de alcanzarla. Ahora el grupo puede desplazarse de lado y
-            el relleno se aprieta en pantalla chica. */}
-        {/* En estrecho las pestañas bajan a una fila propia —la que liberó el
-            icono de guardado— y así caben enteras en vez de salirse por el
-            borde. Desde `sm` vuelven al centro de la barra, como siempre.
-            El `order` las manda al final sin tocar el orden del HTML, que es
-            el que sigue un lector de pantalla.
-
-            Su tamaño no salta: alto, relleno y letra van con `clamp`, así que
-            encogen de forma continua con el ancho de la ventana en vez de
-            cambiar de golpe en un punto. En 393 px las dos pestañas caben
-            enteras; antes "Indicaciones de alimentos" se salía. */}
+        {/* En estrecho las pestañas bajan a una fila propia. */}
         <div className="order-last flex w-full min-w-0 justify-center overflow-x-auto sm:order-none sm:w-auto sm:flex-1">
           <div className="inline-flex min-w-max items-center gap-1 rounded-full border border-[#e5e3ff] bg-[#f7f6ff] p-1 shadow-sm shadow-slate-200/20">
-            {[{ key: "tabla", label: "Tabla de intercambios" }, { key: "alimentos", label: "Indicaciones de alimentos" }].map(t => (
+            {[
+              { key: "tabla", label: "Tabla", labelFull: "Tabla de intercambios" },
+              { key: "alimentos", label: "Alimentos", labelFull: "Indicaciones de alimentos" },
+            ].map(t => (
               <button
                 key={t.key}
+                type="button"
                 onClick={() => setTab(t.key)}
-                className={`h-[clamp(26px,6.5vw,32px)] whitespace-nowrap rounded-full px-[clamp(9px,3.2vw,28px)] text-[clamp(11.5px,3.1vw,14px)] font-semibold transition-all ${tab === t.key ? "bg-[linear-gradient(135deg,#5a56f3_0%,#7a84ff_100%)] text-white shadow-[0_12px_26px_-20px_rgba(59, 95, 235,0.8)]" : "text-slate-500 hover:text-slate-700"}`}
+                className={`min-h-11 whitespace-nowrap rounded-full px-3.5 text-sm font-semibold transition-all sm:h-[clamp(26px,6.5vw,32px)] sm:min-h-0 sm:px-[clamp(9px,3.2vw,28px)] sm:text-[clamp(11.5px,3.1vw,14px)] ${tab === t.key ? "bg-[linear-gradient(135deg,#5a56f3_0%,#7a84ff_100%)] text-white shadow-[0_12px_26px_-20px_rgba(59, 95, 235,0.8)]" : "text-slate-500 hover:text-slate-700"}`}
               >
-                {t.label}
+                <span className="sm:hidden">{t.label}</span>
+                <span className="hidden sm:inline">{t.labelFull}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Centrados siempre, no pegados a la derecha: en estrecho ocupan su
-            propia fila completa y quedan al medio; en ancho, `mx-auto` los
-            mantiene centrados dentro del hueco que les toca. Antes `ml-auto`
-            los empujaba al borde derecho, que en un celular los dejaba lejos
-            del pulgar y descolgados del resto de la barra. */}
-        <div className="mx-auto flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto">
+        {/* Desktop actions */}
+        <div className="mx-auto hidden w-full flex-wrap items-center justify-center gap-2 sm:mx-0 sm:flex sm:w-auto">
           {patientId ? (
             <button
               type="button"
               onClick={onShowMacroEditor}
               disabled={!patientRecord}
-              className="flex h-[29px] items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[29px] sm:min-h-0"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Macronutrientes
@@ -105,16 +167,12 @@ export default function ExchangeToolbar({
           ) : null}
 
           <button
+            type="button"
             onClick={onPrint}
-            className="flex h-[29px] items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
+            className="flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 sm:h-[29px] sm:min-h-0"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir
           </button>
-
-          {/* El indicador de guardado se quitó del todo. El plan se autoguarda
-              al salir de la pantalla, al ocultar la pestaña y cada cierto rato,
-              así que ni el botón ni su estado aportaban nada que el
-              nutricionista tuviera que atender: solo ocupaban sitio. */}
         </div>
       </div>
     </div>

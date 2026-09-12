@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Printer, BookMarked, ShieldAlert, SlidersHorizontal, Bot, Pencil, ChevronDown, MoreHorizontal } from "lucide-react";
+import { Printer, ShieldAlert, SlidersHorizontal, Bot, Pencil, ChevronDown, MoreHorizontal } from "lucide-react";
 import BackLink from "@/components/ui/back-link";
 
 // Pill + popover con las restricciones dietéticas derivadas del expediente
@@ -70,7 +70,6 @@ function MobileActionsMenu({
   macroEditorDisabled,
   onShowMacroEditor,
   onPrint,
-  onSaveToCatalog,
   onOpenAssistant,
 }) {
   const [open, setOpen] = useState(false);
@@ -140,18 +139,6 @@ function MobileActionsMenu({
             </button>
           ) : null}
 
-          {!readOnly ? (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => run(onSaveToCatalog)}
-              className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              <BookMarked className="h-4 w-4 text-slate-500" />
-              Guardar dieta
-            </button>
-          ) : null}
-
           {!readOnly && onOpenAssistant ? (
             <button
               type="button"
@@ -187,12 +174,8 @@ function MobileActionsMenu({
 
 // ── Diet Editor Toolbar ──────────────────────────────────────────────────────
 // Barra superior del editor de dietas: volver, botón "Resumen" (mobile),
-// título editable y los botones de acción (editar macros, imprimir, guardar en
-// catálogo, asistente IA).
-//
-// Extraído de DietCreator sin cambio de comportamiento. Es puramente
-// presentacional: recibe el estado y los callbacks que necesita por props para
-// que la página siga siendo la dueña del estado y la orquestación.
+// título editable y acciones (editar macros, imprimir). El plan se autoguarda;
+// no hay botón "Guardar dieta" (catálogo) en Lite.
 export default function DietEditorToolbar({
   isMobile,
   patientId,
@@ -206,7 +189,6 @@ export default function DietEditorToolbar({
   macroEditorDisabled,
   restrictions = [],
   onPrint,
-  onSaveToCatalog,
   onOpenAssistant,
   // En modo inspección (titular Pro+ viendo a un trabajador) el editor es de
   // solo lectura: se ocultan las acciones de edición y se dejan las de ver.
@@ -282,7 +264,6 @@ export default function DietEditorToolbar({
         macroEditorDisabled={macroEditorDisabled}
         onShowMacroEditor={onShowMacroEditor}
         onPrint={onPrint}
-        onSaveToCatalog={onSaveToCatalog}
         onOpenAssistant={onOpenAssistant}
       />
 
@@ -310,29 +291,17 @@ export default function DietEditorToolbar({
           <Printer className="h-4 w-4" />
           <span className="hidden lg:inline">Imprimir</span>
         </button>
-        {/* Acciones de edición: ocultas en modo solo lectura (inspección). */}
-        {!readOnly ? (
+        {!readOnly && onOpenAssistant ? (
           <>
             <div className="mx-1 h-6 w-px bg-slate-200" aria-hidden="true" />
             <button
               type="button"
-              onClick={onSaveToCatalog}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              onClick={onOpenAssistant}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[linear-gradient(135deg,#3b5feb_0%,#6d81f2_100%)] px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm shadow-brand-500/30 transition hover:opacity-95"
             >
-              <BookMarked className="h-4 w-4" />
-              Guardar dieta
+              <Bot className="h-4 w-4" />
+              Asistente
             </button>
-            {/* Lite excludes clinical AI assistant — Asistente button omitted. */}
-            {onOpenAssistant ? (
-              <button
-                type="button"
-                onClick={onOpenAssistant}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[linear-gradient(135deg,#3b5feb_0%,#6d81f2_100%)] px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm shadow-brand-500/30 transition hover:opacity-95"
-              >
-                <Bot className="h-4 w-4" />
-                Asistente
-              </button>
-            ) : null}
           </>
         ) : null}
       </div>

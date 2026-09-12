@@ -552,11 +552,18 @@ export default function ExchangeDietCreator() {
       brandLogoUrl: user?.brandLogoUrl,
       brandName: user?.brandName,
     });
-    openHtmlPrintPreview({
+    const opened = openHtmlPrintPreview({
       html,
       title: 'Vista previa · Plan por intercambios',
       downloadName: 'plan-intercambios.html',
     });
+    if (!opened) {
+      toast({
+        title: 'No se pudo abrir la vista previa',
+        description: 'Se descargó el HTML del plan. Ábrelo para imprimir.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const persistPlan = useCallback(async (origin = "manual") => {

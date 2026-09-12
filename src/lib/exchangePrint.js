@@ -1,6 +1,6 @@
 // Construcción del HTML A4 imprimible del plan por intercambios (sin React).
-// Extraído de ExchangeDietCreator.jsx para poder testear el HTML sin abrir una
-// ventana ni montar el editor. El componente sigue haciendo window.open().
+// Extraído de ExchangeDietCreator.jsx para poder testear el HTML sin montar el
+// editor. La vista previa la abre openHtmlPrintPreview (overlay + iframe).
 import { getOrderedGroups, scenarioLabel } from "@/lib/exchangePlan";
 import { getPatientGroupLabel } from "@/components/exchanges/exchangeData";
 import { esc } from "@/lib/anthropometry/printReport/format";
@@ -73,7 +73,7 @@ export function buildExchangePrintHtml({
   }];
 
   const coverPlanSummary = plansToPrint.map((entry, index) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;min-width:320px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;min-width:0;width:100%;">
       <div>
         <div style="font-size:16px;font-weight:700;color:#1e293b;">${esc(scenarioLabel(entry.scenario, index, "Plan Alimenticio"))}</div>
         <div style="font-size:12px;color:#64748b;margin-top:4px;">Distribución por intercambios</div>
@@ -153,9 +153,21 @@ export function buildExchangePrintHtml({
 
   const logoSrc = safeUrl(brandLogoUrl);
 
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${esc(title)}</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#1e293b;}@page{margin:2cm;}</style></head><body>
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${esc(title)}</title><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;color:#1e293b;padding:12px;}
+img{max-width:100%;height:auto;}
+table{width:100%;max-width:100%;}
+@media screen and (max-width:640px){
+  body{padding:8px;font-size:14px;}
+  h1{font-size:22px !important;}
+  h2{font-size:16px !important;}
+  section{min-height:auto !important;padding:16px 8px !important;}
+}
+@page{margin:2cm;}
+</style></head><body>
     <section style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;">
-      ${logoSrc ? `<img src="${logoSrc}" alt="${esc(brandName || 'Logo')}" style="max-height:72px;max-width:220px;object-fit:contain;margin-bottom:20px;"/>` : ''}
+      ${logoSrc ? `<img src="${logoSrc}" alt="${esc(brandName || 'Logo')}" style="max-height:72px;max-width:min(220px,100%);object-fit:contain;margin-bottom:20px;"/>` : ''}
       ${brandName ? `<div style="font-size:15px;font-weight:700;color:#334155;margin-bottom:20px;">${esc(brandName)}</div>` : ''}
       <h1 style="font-size:32px;font-weight:800;color:#1e293b;margin-bottom:12px;">Plan Alimenticio</h1>
       <h2 style="font-size:18px;font-weight:700;color:#0f766e;margin-bottom:28px;">${esc(title)}</h2>

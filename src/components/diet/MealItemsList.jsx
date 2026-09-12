@@ -111,7 +111,7 @@ function MealItemRow({ item, indented, mealTotalKcal, onUpdateQty, onUpdateUnit,
           <button
             type="button"
             onClick={() => onInspect?.({ kind: "item", itemId: item.id })}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-sky-50 hover:text-sky-600 transition"
+            className="flex h-11 w-11 touch-manipulation items-center justify-center rounded-md text-slate-400 transition hover:bg-sky-50 hover:text-sky-600 sm:h-7 sm:w-7"
             aria-label="Ver detalle nutricional"
             title="Ver macros y micronutrientes"
           >
@@ -121,7 +121,7 @@ function MealItemRow({ item, indented, mealTotalKcal, onUpdateQty, onUpdateUnit,
             <button
               type="button"
               onClick={() => onRemove(item.id)}
-              className="opacity-0 group-hover:opacity-100 transition flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+              className="flex h-11 w-11 touch-manipulation items-center justify-center rounded-md text-slate-400 opacity-100 transition hover:bg-rose-50 hover:text-rose-500 sm:h-7 sm:w-7 sm:opacity-0 sm:group-hover:opacity-100"
               aria-label="Eliminar alimento"
               title="Eliminar alimento"
             >
