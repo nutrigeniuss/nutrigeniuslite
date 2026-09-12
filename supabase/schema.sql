@@ -66,7 +66,12 @@ create policy "profiles_select_own_or_admin"
 drop policy if exists "profiles_update_admin" on public.profiles;
 create policy "profiles_update_admin"
   on public.profiles for update
-  using (public.is_lite_admin());
+  using (public.is_lite_admin())
+  with check (
+    public.is_lite_admin()
+    and role = 'user'
+    and coalesce(access_mode, '') <> 'internal_admin'
+  );
 
 -- Tras el primer registro, promover admin manualmente:
 -- update public.profiles

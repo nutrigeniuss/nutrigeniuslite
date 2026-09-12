@@ -1,5 +1,5 @@
--- NutriGenius Lite — endurecer has_lite_access (alineado con resolveLiteAccess del cliente)
--- Pegar en SQL Editor si ya tenías foods.sql aplicado (idempotente).
+-- NutriGenius Lite — endurecer has_lite_access + profiles update
+-- Pegar en SQL Editor (idempotente).
 
 create or replace function public.has_lite_access()
 returns boolean
@@ -23,3 +23,14 @@ as $$
       )
   );
 $$;
+
+-- Admin puede gestionar accesos, pero no promover a admin / internal_admin por API.
+drop policy if exists "profiles_update_admin" on public.profiles;
+create policy "profiles_update_admin"
+  on public.profiles for update
+  using (public.is_lite_admin())
+  with check (
+    public.is_lite_admin()
+    and role = 'user'
+    and coalesce(access_mode, '') <> 'internal_admin'
+  );

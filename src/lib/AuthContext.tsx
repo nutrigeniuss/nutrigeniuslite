@@ -11,6 +11,7 @@ import {
   isInactivityExpired,
   touchLastActivity,
 } from './sessionInactivity';
+import { clearLiteSessionStorage } from './clearLiteSessionStorage';
 
 export type ProfileRow = LiteAccessProfile & {
   id: string;
@@ -213,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     clearLastActivity();
+    clearLiteSessionStorage();
     await supabase?.auth.signOut();
     setProfile(null);
   }, []);
