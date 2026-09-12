@@ -571,7 +571,6 @@ export default function PatientDiet({ patient, tab = 'alimentos', onUpdate, regi
               <div className="py-12 text-center text-sm text-slate-400">Cargando...</div>
             ) : (
               <DietCalendarView
-                patient={patient}
                 dietPlans={dietPlans}
                 patientParam={patientParam}
                 onSelectedDateChange={setSelectedCalendarDate}

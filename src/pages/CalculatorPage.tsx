@@ -10,7 +10,9 @@ function FichaShell() {
   const { patient, updatePatient, resetFicha } = useFicha();
 
   const handleNuevaFicha = () => {
-    if (!window.confirm('¿Borrar toda la ficha actual? Se limpia paciente, mediciones, bioquímica y dieta.')) {
+    if (!window.confirm(
+      '¿Nueva ficha? Se limpia paciente, mediciones, bioquímica y dieta de esta sesión. No hay historial en la nube: Lite es una calculadora.',
+    )) {
       return;
     }
     resetFicha();
@@ -22,7 +24,7 @@ function FichaShell() {
         <div className="min-w-0">
           <BrandLogo alt="NutriGenius Lite" showLite />
           <p className="ng-muted mt-1.5 pl-0.5">
-            {profile?.full_name || profile?.email || 'Calculadora'}
+            Calculadora de consulta · {profile?.full_name || profile?.email || 'sesión local'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">

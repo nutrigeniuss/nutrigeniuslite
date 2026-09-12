@@ -10,6 +10,9 @@ import {
 
 const STORAGE_KEY = 'ng_lite_calc_ficha_v1';
 
+// Borrador de trabajo en el navegador (calculadora). No es archivo clínico:
+// se limpia con «Nueva ficha». Si el usuario sale con datos, es solo sesión local.
+
 export type FichaMeasurement = {
   date?: string;
   weight?: number | null;
