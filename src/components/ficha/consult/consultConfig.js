@@ -38,6 +38,11 @@ export const GROUPS = [
     tabs: [{ key: "bioq", label: "Bioquímica" }],
   },
   {
+    key: "dietetica",
+    label: "Dietética",
+    tabs: [{ key: "dietetica", label: "Recordatorio 24h" }],
+  },
+  {
     key: "dieta",
     label: "Dieta",
     tabs: [
@@ -164,6 +169,7 @@ export const GROUP_ACCENTS = {
   antro: "border-brand-500 text-brand-500",
   cal: "border-[#16a34a] text-[#16a34a]",
   bioq: "border-coral-500 text-coral-700",
+  dietetica: "border-brand-500 text-brand-700",
   dieta: "border-coral-500 text-coral-700",
 };
 

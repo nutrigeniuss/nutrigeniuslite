@@ -16,6 +16,7 @@ import PatientDatosPanel from "./consult/PatientDatosPanel";
 import DietPanel from "./diet/DietPanel";
 import ResultsPrintButton from "./results/ResultsPrintButton";
 import Bioquimica from "./Bioquimica";
+import DieteticaPanel from "./dietetica/DieteticaPanel";
 
 const DIET_TABS = new Set(["alimentos", "intercambios", "artificial"]);
 const pillActive = "ng-pill ng-pill-active";
@@ -95,13 +96,17 @@ export default function ConsultDetail({
 
   const handleSave = async (_origin = "manual", extraData = {}) => {
     const safeExtra = (extraData && typeof extraData === "object" && !extraData.nativeEvent && !(extraData instanceof Event)) ? extraData : {};
-    const merged = { ...data, recall_24h: recall, ...safeExtra };
+    // Preferir el R24h vivo de la ficha (Dietética) sobre el snapshot local legado.
+    const liveRecall = Array.isArray(measurements[consultIndex]?.recall_24h)
+      ? measurements[consultIndex].recall_24h
+      : recall;
+    const merged = { ...data, recall_24h: liveRecall, ...safeExtra };
     const newMeasurements = [...measurements];
     newMeasurements[consultIndex] = merged;
     setData(merged);
     const saved = await onUpdate({ measurements: newMeasurements });
     if (saved) {
-      setLastSavedSnapshot({ data: merged, recall: merged.recall_24h || recall });
+      setLastSavedSnapshot({ data: merged, recall: merged.recall_24h || liveRecall });
     }
     return saved;
   };
@@ -272,7 +277,7 @@ export default function ConsultDetail({
       </div>
 
       <div className={
-        tab === "cal" || tab === "bioq" || DIET_TABS.has(tab)
+        tab === "cal" || tab === "bioq" || tab === "dietetica" || DIET_TABS.has(tab)
           ? ""
           : `${shellClass}${isAntro && tab !== "res" ? " flex flex-col md:flex-row" : isAntro ? " flex flex-col md:flex-row" : ""}`
       }>
@@ -320,6 +325,18 @@ export default function ConsultDetail({
           <div className={`${shellClass} ng-inset`}>
             <Bioquimica
               patient={patient}
+              onUpdate={async (patch) => {
+                if (onPatientUpdate) return onPatientUpdate(patch);
+                return onUpdate(patch);
+              }}
+            />
+          </div>
+        ) : tab === "dietetica" ? (
+          <div className={`${shellClass} ng-inset`}>
+            <DieteticaPanel
+              patient={patient}
+              consultIndex={consultIndex}
+              registerAutosave={registerAutosave}
               onUpdate={async (patch) => {
                 if (onPatientUpdate) return onPatientUpdate(patch);
                 return onUpdate(patch);
