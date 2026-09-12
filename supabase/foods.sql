@@ -63,6 +63,7 @@ as $$
         or p.access_mode = 'internal_admin'
         or (
           p.is_active = true
+          and coalesce(p.access_mode, '') <> 'lite_disabled'
           and (p.access_expires_at is null or p.access_expires_at > now())
         )
       )

@@ -27,20 +27,40 @@ function parseAllowedOrigins(): string[] {
     .split(',')
     .map((s) => s.trim().replace(/\/$/, ''))
     .filter(Boolean)
-  // Desarrollo local siempre permitido si no rompe el allowlist vacío
   const defaults = ['http://localhost:5173', 'http://127.0.0.1:5173']
   return [...new Set([...list, ...defaults])]
 }
 
-function corsHeadersFor(req: Request): Record<string, string> {
-  const origin = (req.headers.get('Origin') || '').replace(/\/$/, '')
+function corsForOrigin(origin: string | null): { ok: boolean; headers: Record<string, string> } {
   const allowed = parseAllowedOrigins()
-  const matched = origin && allowed.includes(origin) ? origin : allowed[0] || 'http://localhost:5173'
+  const normalized = (origin || '').replace(/\/$/, '')
+  // Sin Origin (curl / server): no reflejar un origen arbitrario.
+  if (!normalized) {
+    return {
+      ok: true,
+      headers: {
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        Vary: 'Origin',
+      },
+    }
+  }
+  if (!allowed.includes(normalized)) {
+    return {
+      ok: false,
+      headers: {
+        Vary: 'Origin',
+      },
+    }
+  }
   return {
-    'Access-Control-Allow-Origin': matched,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    Vary: 'Origin',
+    ok: true,
+    headers: {
+      'Access-Control-Allow-Origin': normalized,
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      Vary: 'Origin',
+    },
   }
 }
 
@@ -51,29 +71,39 @@ function json(data: unknown, status: number, cors: Record<string, string>) {
   })
 }
 
+function isAdminProfile(row: { role?: string | null; access_mode?: string | null } | null): boolean {
+  return row?.role === 'admin' || row?.access_mode === 'internal_admin'
+}
+
 Deno.serve(async (req) => {
-  const corsHeaders = corsHeadersFor(req)
+  const origin = req.headers.get('Origin')
+  const cors = corsForOrigin(origin)
 
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    if (!cors.ok) return new Response('origin not allowed', { status: 403, headers: cors.headers })
+    return new Response('ok', { headers: cors.headers })
+  }
+
+  if (!cors.ok) {
+    return json({ error: 'Origin no permitido' }, 403, cors.headers)
   }
 
   try {
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return json({ error: 'Falta Authorization' }, 401, corsHeaders)
+    if (!authHeader) return json({ error: 'Falta Authorization' }, 401, cors.headers)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !anonKey || !serviceKey) {
-      return json({ error: 'Edge Function sin variables de entorno' }, 500, corsHeaders)
+      return json({ error: 'Edge Function sin variables de entorno' }, 500, cors.headers)
     }
 
     const caller = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     })
     const { data: userData, error: userErr } = await caller.auth.getUser()
-    if (userErr || !userData.user) return json({ error: 'Sesión inválida' }, 401, corsHeaders)
+    if (userErr || !userData.user) return json({ error: 'Sesión inválida' }, 401, cors.headers)
 
     const admin = createClient(supabaseUrl, serviceKey)
     const { data: profile } = await admin
@@ -82,9 +112,9 @@ Deno.serve(async (req) => {
       .eq('id', userData.user.id)
       .maybeSingle()
 
-    const isAdmin =
-      profile?.role === 'admin' || profile?.access_mode === 'internal_admin'
-    if (!isAdmin) return json({ error: 'Solo el módulo maestro' }, 403, corsHeaders)
+    if (!isAdminProfile(profile)) {
+      return json({ error: 'Solo el módulo maestro' }, 403, cors.headers)
+    }
 
     const body = (await req.json()) as Body
     const action = body.action
@@ -97,7 +127,7 @@ Deno.serve(async (req) => {
         return json(
           { error: `Email y contraseña (mín. ${MIN_PASSWORD_LENGTH}) son obligatorios` },
           400,
-          corsHeaders,
+          cors.headers,
         )
       }
 
@@ -110,7 +140,7 @@ Deno.serve(async (req) => {
         accessDays !== 45 &&
         accessDays !== 90
       ) {
-        return json({ error: 'accessDays inválido' }, 400, corsHeaders)
+        return json({ error: 'accessDays inválido' }, 400, cors.headers)
       }
 
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -120,7 +150,7 @@ Deno.serve(async (req) => {
         user_metadata: { full_name: fullName },
       })
       if (createErr || !created.user) {
-        return json({ error: createErr?.message || 'No se pudo crear' }, 400, corsHeaders)
+        return json({ error: createErr?.message || 'No se pudo crear' }, 400, cors.headers)
       }
 
       const accessExpiresAt = (() => {
@@ -155,11 +185,11 @@ Deno.serve(async (req) => {
               : {}),
           },
           400,
-          corsHeaders,
+          cors.headers,
         )
       }
 
-      return json({ ok: true, userId: created.user.id }, 200, corsHeaders)
+      return json({ ok: true, userId: created.user.id }, 200, cors.headers)
     }
 
     if (action === 'set_password') {
@@ -169,39 +199,47 @@ Deno.serve(async (req) => {
         return json(
           { error: `userId y contraseña (mín. ${MIN_PASSWORD_LENGTH}) requeridos` },
           400,
-          corsHeaders,
+          cors.headers,
         )
       }
       if (userId === userData.user.id) {
-        return json({ error: 'Usa el flujo normal para cambiar tu propia clave' }, 400, corsHeaders)
-      }
-      const { error: pwErr } = await admin.auth.admin.updateUserById(userId, { password })
-      if (pwErr) return json({ error: pwErr.message }, 400, corsHeaders)
-      return json({ ok: true }, 200, corsHeaders)
-    }
-
-    if (action === 'delete') {
-      const userId = body.userId
-      if (!userId) return json({ error: 'userId requerido' }, 400, corsHeaders)
-      if (userId === userData.user.id) {
-        return json({ error: 'No puedes borrar tu propia cuenta admin' }, 400, corsHeaders)
+        return json({ error: 'Usa el flujo normal para cambiar tu propia clave' }, 400, cors.headers)
       }
       const { data: target } = await admin
         .from('profiles')
         .select('role, access_mode')
         .eq('id', userId)
         .maybeSingle()
-      if (target?.role === 'admin' || target?.access_mode === 'internal_admin') {
-        return json({ error: 'No se pueden borrar cuentas admin' }, 400, corsHeaders)
+      if (isAdminProfile(target)) {
+        return json({ error: 'No se puede resetear la clave de una cuenta admin' }, 400, cors.headers)
       }
-      const { error: delErr } = await admin.auth.admin.deleteUser(userId)
-      if (delErr) return json({ error: delErr.message }, 400, corsHeaders)
-      return json({ ok: true }, 200, corsHeaders)
+      const { error: pwErr } = await admin.auth.admin.updateUserById(userId, { password })
+      if (pwErr) return json({ error: pwErr.message }, 400, cors.headers)
+      return json({ ok: true }, 200, cors.headers)
     }
 
-    return json({ error: 'Acción no soportada' }, 400, corsHeaders)
+    if (action === 'delete') {
+      const userId = body.userId
+      if (!userId) return json({ error: 'userId requerido' }, 400, cors.headers)
+      if (userId === userData.user.id) {
+        return json({ error: 'No puedes borrar tu propia cuenta admin' }, 400, cors.headers)
+      }
+      const { data: target } = await admin
+        .from('profiles')
+        .select('role, access_mode')
+        .eq('id', userId)
+        .maybeSingle()
+      if (isAdminProfile(target)) {
+        return json({ error: 'No se pueden borrar cuentas admin' }, 400, cors.headers)
+      }
+      const { error: delErr } = await admin.auth.admin.deleteUser(userId)
+      if (delErr) return json({ error: delErr.message }, 400, cors.headers)
+      return json({ ok: true }, 200, cors.headers)
+    }
+
+    return json({ error: 'Acción no soportada' }, 400, cors.headers)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Error interno'
-    return json({ error: message }, 500, corsHeaders)
+    return json({ error: message }, 500, cors.headers)
   }
 })

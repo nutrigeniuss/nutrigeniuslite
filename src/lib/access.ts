@@ -13,15 +13,22 @@ const isAccessExpired = (accessExpiresAt?: string | null): boolean => {
   return !Number.isNaN(ms) && ms < Date.now();
 };
 
-/** Acceso: admin siempre; is_active / manual_preview activos; resto pendiente o revocado. */
+/**
+ * Acceso alineado con `has_lite_access()` en Supabase:
+ * admin siempre; resto solo con is_active y sin vencimiento / lite_disabled.
+ * `manual_preview` es etiqueta de grant, no bypass si is_active=false.
+ */
 export function resolveLiteAccess(profile: LiteAccessProfile): LiteAccessStatus {
   if (profile.role === 'admin' || profile.accessMode === 'internal_admin') {
     return 'active';
   }
-  if (profile.accessMode === 'lite_disabled' || isAccessExpired(profile.accessExpiresAt)) {
+  if (profile.accessMode === 'lite_disabled') {
     return 'disabled';
   }
-  if (profile.isActive === true || profile.accessMode === 'manual_preview') {
+  if (isAccessExpired(profile.accessExpiresAt)) {
+    return 'disabled';
+  }
+  if (profile.isActive === true) {
     return 'active';
   }
   if (profile.isActive === false) {

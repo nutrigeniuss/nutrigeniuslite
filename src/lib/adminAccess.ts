@@ -64,6 +64,6 @@ export function resolveAdminRowStatus(
 
   if (expired) return 'expired';
   if (row.access_mode === 'lite_disabled' || row.is_active === false) return 'disabled';
-  if (row.is_active === true || row.access_mode === 'manual_preview') return 'active';
+  if (row.is_active === true) return 'active';
   return 'pending';
 }
