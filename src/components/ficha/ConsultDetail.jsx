@@ -282,7 +282,7 @@ export default function ConsultDetail({
               key={group.key}
               type="button"
               onClick={() => setTabIdx(groupTabIdxs[0])}
-              className={`shrink-0 touch-manipulation ${isGroupActive ? pillActive : pillIdle}`}
+              className={`shrink-0 touch-manipulation transition-transform duration-150 active:scale-[0.97] ${isGroupActive ? pillActive : pillIdle}`}
             >
               {group.label}
             </button>
@@ -290,6 +290,7 @@ export default function ConsultDetail({
         })}
       </div>
 
+      <div className="ng-rise">
       <FichaContextBar
         patient={patient}
         measurement={data}
@@ -307,6 +308,7 @@ export default function ConsultDetail({
           });
         }}
       />
+      </div>
 
       <div className={
         tab === "cal" || tab === "bioq" || tab === "dietetica" || DIET_TABS.has(tab)

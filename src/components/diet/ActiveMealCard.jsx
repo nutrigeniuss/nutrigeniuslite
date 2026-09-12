@@ -29,25 +29,18 @@ export default function ActiveMealCard({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="ng-card-soft ng-rise overflow-hidden">
 
       {/* Encabezado: emoji + nombre + subtítulo | hora + kcal + eliminar */}
-      {/* Fila que se parte en dos líneas cuando no cabe. Sin `flex-wrap` el
-          grupo derecho (hora + kcal + papelera, unos 236 px) más el título
-          desbordaban los 335 px útiles de un celular, y la papelera quedaba
-          fuera de la pantalla: no se podía borrar una comida desde el móvil. */}
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-slate-100 px-3 py-3 sm:px-5 sm:py-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-slate-100/90 bg-gradient-to-br from-white via-brand-50/20 to-coral-50/15 px-3 py-3.5 sm:px-5 sm:py-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            {/* Emoji clickeable: abre/cierra el selector. El emoji
-                elegido se guarda en `meal.icon` del propio plan,
-                así que persiste al guardar la dieta. */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setEmojiPickerOpen((prev) => !prev)}
                 disabled={readOnly}
-                className="text-xl leading-none rounded-lg p-1 hover:bg-slate-100 transition disabled:cursor-default disabled:hover:bg-transparent"
+                className="rounded-xl p-1.5 text-xl leading-none transition hover:bg-white/80 disabled:cursor-default disabled:hover:bg-transparent"
                 title="Cambiar icono"
                 aria-label="Cambiar icono del tiempo de comida"
               >
@@ -55,15 +48,14 @@ export default function ActiveMealCard({
               </button>
               {emojiPickerOpen ? (
                 <>
-                  {/* Backdrop para cerrar al hacer clic fuera */}
                   <button
                     type="button"
                     aria-label="Cerrar selector de icono"
                     onClick={() => setEmojiPickerOpen(false)}
                     className="fixed inset-0 z-30 cursor-default"
                   />
-                  <div className="absolute left-0 top-full mt-2 z-40 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                    <div className="grid grid-cols-8 gap-1 max-h-56 overflow-y-auto">
+                  <div className="absolute left-0 top-full z-40 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.35)]">
+                    <div className="grid max-h-56 grid-cols-8 gap-1 overflow-y-auto">
                       {MEAL_EMOJI_OPTIONS.map((emoji) => (
                         <button
                           key={emoji}
@@ -72,8 +64,8 @@ export default function ActiveMealCard({
                             onUpdateMeal({ ...meal, icon: emoji });
                             setEmojiPickerOpen(false);
                           }}
-                          className={`h-8 w-8 flex items-center justify-center rounded text-lg transition hover:bg-slate-100 ${
-                            getMealEmoji(meal) === emoji ? "bg-amber-50 ring-1 ring-amber-300" : ""
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg transition hover:bg-slate-100 ${
+                            getMealEmoji(meal) === emoji ? "bg-brand-50 ring-1 ring-brand-300" : ""
                           }`}
                         >
                           {emoji}
@@ -97,63 +89,57 @@ export default function ActiveMealCard({
                   }}
                   className="border-b-2 border-brand-500 bg-transparent text-base font-bold text-slate-800 outline-none"
                 />
-                <button
-                  type="button"
-                  onClick={commitName}
-                  className="text-brand-500"
-                >
-                  <Check className="w-4 h-4" />
+                <button type="button" onClick={commitName} className="text-brand-500">
+                  <Check className="h-4 w-4" />
                 </button>
                 <button type="button" onClick={() => setEditingName(false)} className="text-slate-400">
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             ) : (
               <>
-                <h2 className="text-base font-bold text-slate-800">{meal.name}</h2>
+                <h2 className="ng-display text-base font-semibold tracking-tight text-slate-900 sm:text-lg">{meal.name}</h2>
                 {!readOnly ? (
                   <button
                     type="button"
                     onClick={() => { setNameInput(meal.name); setEditingName(true); }}
-                    className="text-slate-300 hover:text-brand-500 transition"
+                    className="rounded-lg p-1.5 text-slate-300 transition hover:bg-white hover:text-brand-500"
                   >
-                    <Pencil className="w-3.5 h-3.5" />
+                    <Pencil className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
               </>
             )}
           </div>
-          <p className="text-xs text-slate-400 mt-0.5 ml-8">
+          <p className="ml-10 mt-0.5 text-xs font-medium text-slate-400">
             {meal.items.length} alimento{meal.items.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Hora editable: pill con borde para que se vea claramente como input.
-              Hover y foco intensifican el estilo. El picker nativo se abre al hacer clic. */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <label
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-600 cursor-pointer transition hover:border-sky-300 hover:bg-sky-50 focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-200"
+            className="flex min-h-11 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-brand-300 hover:bg-brand-50/40 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-500/15"
             title="Editar hora del tiempo de comida"
           >
-            <Clock className="w-4 h-4 text-slate-400" />
+            <Clock className="h-4 w-4 text-slate-400" />
             <input
               type="time"
               value={meal.time || ""}
               onChange={(e) => onUpdateMeal({ ...meal, time: e.target.value })}
               readOnly={readOnly}
-              className="text-sm font-medium text-slate-700 outline-none w-[68px] bg-transparent cursor-pointer"
+              className="w-[68px] cursor-pointer bg-transparent text-sm font-semibold text-slate-700 outline-none"
             />
           </label>
-          <span className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-1.5 text-sm font-bold text-amber-600">
+          <span className="rounded-full bg-gradient-to-br from-amber-50 to-orange-50 px-3.5 py-2 text-sm font-bold tabular-nums text-amber-600 ring-1 ring-amber-100">
             {mealCalories} kcal
           </span>
           {!readOnly ? (
             <button
               type="button"
               onClick={() => onDeleteMeal(meal.id)}
-              className="p-1.5 text-slate-300 hover:text-red-400 transition rounded-lg hover:bg-red-50"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-slate-300 transition hover:bg-rose-50 hover:text-rose-500"
               aria-label="Eliminar tiempo de comida"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="h-4 w-4" />
             </button>
           ) : null}
         </div>
@@ -184,7 +170,7 @@ export default function ActiveMealCard({
                 <button
                   type="button"
                   onClick={onOpenFoodSearch}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(59,95,235,0.32)] transition hover:opacity-95"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 px-6 py-3 text-sm font-bold text-white shadow-[0_12px_28px_rgba(59,95,235,0.32)] transition hover:opacity-95 active:scale-[0.98]"
                 >
                   <Search className="h-4 w-4" />
                   Buscar alimento

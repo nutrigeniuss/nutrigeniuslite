@@ -32,10 +32,10 @@ function MealItemRow({ item, indented, mealTotalKcal, onUpdateQty, onUpdateUnit,
   const isHeavyContributor = mealTotalKcal > 0 && itemKcal / mealTotalKcal > 0.4;
 
   return (
-    <tr className="hover:bg-slate-50/70 transition group">
-      <td className={`${indented ? "pl-4 pr-2 sm:pl-8 sm:pr-4" : "px-2 sm:px-4"} py-3 text-center`}>
+    <tr className="group transition hover:bg-brand-50/40">
+      <td className={`${indented ? "pl-4 pr-2 sm:pl-8 sm:pr-4" : "px-2 sm:px-4"} py-3.5 text-center`}>
         {readOnly ? (
-          <span className="text-sm font-bold text-slate-700 tabular-nums">{item.quantity || 1}</span>
+          <span className="text-sm font-bold tabular-nums text-slate-700">{item.quantity || 1}</span>
         ) : (
           <DeferredNumberInput
             min={0.01}
@@ -43,13 +43,13 @@ function MealItemRow({ item, indented, mealTotalKcal, onUpdateQty, onUpdateUnit,
             value={item.quantity || 1}
             displayPrecision={2}
             onCommit={(v) => onUpdateQty(item.id, v > 0 ? v : 0.01)}
-            className="w-14 rounded-lg border border-slate-200 bg-white p-1.5 text-center text-sm font-bold text-slate-700 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 hover:border-slate-300"
+            className="w-14 rounded-xl border border-slate-200 bg-[#f7f8fc] p-2 text-center text-sm font-bold text-slate-700 outline-none transition hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/15"
           />
         )}
       </td>
 
-      <td className="px-2 py-3 sm:px-4">
-        <p className="text-sm font-semibold text-slate-800 leading-tight">{item.name}</p>
+      <td className="px-2 py-3.5 sm:px-4">
+        <p className="text-sm font-bold leading-tight text-slate-900">{item.name}</p>
         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
           {Array.isArray(item.unit_options) && item.unit_options.length > 1 ? (
             readOnly ? (

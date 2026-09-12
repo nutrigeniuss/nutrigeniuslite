@@ -66,7 +66,7 @@ export default function FoodSearchModal({ open, onClose, title = "Agregar alimen
       data-testid="food-search-modal"
     >
       <div
-        className="absolute inset-0 bg-slate-900/35 backdrop-blur-[4px]"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-[6px] transition-opacity"
         onClick={onClose}
         data-testid="food-search-overlay"
         aria-hidden="true"
@@ -75,9 +75,10 @@ export default function FoodSearchModal({ open, onClose, title = "Agregar alimen
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[1.75rem] bg-white shadow-[0_-8px_40px_rgba(15,23,42,0.18)] outline-none sm:rounded-[1.75rem] sm:shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
+        className="ng-sheet-enter relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[1.85rem] bg-white shadow-[0_-12px_48px_rgba(15,23,42,0.22)] outline-none sm:rounded-[1.85rem] sm:shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
       >
-        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-slate-100/90 bg-gradient-to-br from-white via-brand-50/30 to-coral-50/20 px-5 py-4 sm:px-6">
+        <div className="mx-auto mb-1 mt-2 h-1 w-10 rounded-full bg-slate-200 sm:hidden" aria-hidden="true" />
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-slate-100/90 bg-gradient-to-br from-white via-brand-50/35 to-coral-50/25 px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-500">Agregar</p>
             <h2 className="ng-display truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
@@ -87,7 +88,7 @@ export default function FoodSearchModal({ open, onClose, title = "Agregar alimen
           <button
             type="button"
             onClick={onClose}
-            className="ng-back !px-3 !py-2.5"
+            className="ng-back !min-h-11 !px-3 !py-2.5"
             aria-label="Cerrar buscador de alimentos"
           >
             <X className="h-4 w-4" strokeWidth={2.4} />

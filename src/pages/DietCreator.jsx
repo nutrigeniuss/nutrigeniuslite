@@ -638,7 +638,7 @@ export default function DietCreator() {
     : 0;
 
   return (
-    <div className="flex h-full min-h-0 w-full overflow-hidden" style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f8ff" }}>
+    <div className="flex h-full min-h-0 w-full overflow-hidden" style={{ backgroundColor: "#f4f6fb" }}>
       <style>{`
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -695,7 +695,7 @@ export default function DietCreator() {
       ) : null}
 
       {/* ÁREA PRINCIPAL */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#f8f8ff]">
+      <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#f4f6fb]">
 
         {/* ── Barra superior: título + navegación de fecha + botones de acción ── */}
         <DietEditorToolbar
@@ -765,8 +765,8 @@ export default function DietCreator() {
             El pb-28 en móvil deja aire bajo el último alimento: si no, los
             botones flotantes ("Agregar alimento" y el asistente) tapan la
             última fila y no hay forma de verla. */}
-        <div className="flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-6">
-          <div className="max-w-4xl mx-auto space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 pb-28 sm:p-6 sm:pb-6">
+          <div className="mx-auto max-w-4xl space-y-4 ng-rise">
 
             {activeMeal && (
               <ActiveMealCard

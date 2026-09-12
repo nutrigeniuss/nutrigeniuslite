@@ -195,7 +195,7 @@ export default function DietEditorToolbar({
   readOnly = false,
 }) {
   return (
-    <header className="relative z-20 flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-2.5 shadow-sm sm:px-6">
+    <header className="relative z-20 flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-slate-200/80 bg-white/90 px-3 py-2.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,0.25)] backdrop-blur-md sm:px-6">
       {/* Volver: z-index y touch-manipulation para que el dedo no “falle” en
           celulares con barra apretada. En móvil el texto es más corto. */}
       <BackLink

@@ -101,6 +101,53 @@
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.05);
 }
 
+/* Card “app” Fitia: más redonda y con lift suave al interactuar. */
+.ng-card-soft {
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(226, 232, 240, 0.75);
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 12px 32px -12px rgba(15, 23, 42, 0.12);
+}
+
+@media (min-width: 640px) {
+  .ng-card-soft {
+    border-radius: 1.5rem;
+  }
+}
+
+@keyframes ng-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ng-sheet-up {
+  from {
+    opacity: 0.6;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ng-rise {
+  animation: ng-rise 0.22s ease-out both;
+}
+
+.ng-sheet-enter {
+  animation: ng-sheet-up 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* Aire interno estándar de las cards (nada pegado al borde). */
 .ng-inset {
   padding: 0.85rem;

@@ -48,9 +48,9 @@ export default function MealTabsNav({
         ref={dragProvided?.innerRef}
         {...(dragProvided?.draggableProps || {})}
         {...(dragProvided?.dragHandleProps || {})}
-        className={`group relative flex items-stretch bg-white ${
+        className={`group relative mx-0.5 flex items-stretch ${
           canReorder ? "cursor-grab active:cursor-grabbing" : ""
-        } ${isDragging ? "rounded-lg shadow-lg ring-1 ring-brand-500/30 z-10" : ""}`}
+        } ${isDragging ? "z-10 rounded-2xl shadow-lg ring-2 ring-brand-500/25" : ""}`}
         title={canReorder ? `Arrastra para reordenar ${meal.name}` : undefined}
       >
         {/* Agarradera: sólo se ve al pasar el cursor o al enfocar con teclado,
@@ -66,22 +66,27 @@ export default function MealTabsNav({
         <button
           type="button"
           onClick={() => onSelectMeal(meal.id)}
-          className={`flex flex-col items-center justify-center px-5 py-3 min-w-[90px] transition border-b-2 ${
+          className={`flex min-h-[4.25rem] min-w-[5.5rem] flex-col items-center justify-center rounded-2xl px-4 py-2.5 transition-all duration-200 touch-manipulation ${
             isActive
-              ? "border-amber-500 text-slate-800"
-              : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200"
+              ? "bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-[0_12px_28px_-10px_rgba(59,95,235,0.55)] scale-[1.02]"
+              : "bg-transparent text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-sm"
           }`}
         >
-          <span className="text-base leading-none mb-1">{emoji}</span>
-          <span className={`text-sm leading-none whitespace-nowrap ${isActive ? "font-bold" : "font-semibold"}`}>
+          <span className="mb-1 text-base leading-none">{emoji}</span>
+          <span className={`whitespace-nowrap text-sm leading-none ${isActive ? "font-bold" : "font-semibold"}`}>
             {meal.name}
           </span>
-          <span className={`text-[11px] leading-none mt-1 ${isActive ? "text-amber-500 font-semibold" : "text-slate-400"}`}>
+          <span className={`mt-1 text-[11px] leading-none ${isActive ? "font-semibold text-white/85" : "text-slate-400"}`}>
             {mealCal} kcal
           </span>
-          {/* Punto verde = la comida ya tiene alimentos cargados */}
           <span
-            className={`mt-1 h-1.5 w-1.5 rounded-full transition-colors ${meal.items.length > 0 ? "bg-emerald-400" : "bg-transparent"}`}
+            className={`mt-1.5 h-1.5 w-1.5 rounded-full transition-colors ${
+              meal.items.length > 0
+                ? isActive
+                  ? "bg-white"
+                  : "bg-emerald-400"
+                : "bg-transparent"
+            }`}
             aria-hidden="true"
           />
         </button>
@@ -89,10 +94,12 @@ export default function MealTabsNav({
           <button
             type="button"
             onClick={(event) => { event.stopPropagation(); onDeleteMeal(meal.id); }}
-            className="absolute right-0.5 top-1 h-4 w-4 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition"
+            className={`absolute -right-0.5 -top-0.5 flex h-7 w-7 items-center justify-center rounded-full transition ${
+              isActive ? "bg-white/20 text-white hover:bg-white/30" : "bg-slate-100 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+            }`}
             aria-label={`Eliminar ${meal.name}`}
           >
-            <X className="h-2.5 w-2.5" />
+            <X className="h-3 w-3" />
           </button>
         ) : null}
       </div>
@@ -100,18 +107,19 @@ export default function MealTabsNav({
   };
 
   const addButton = !readOnly ? (
-    <div className="flex items-center px-2 border-l border-slate-100">
+    <div className="flex items-center px-1.5">
       <button
         type="button"
         onClick={onAddMeal}
-        className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-brand-500 hover:bg-brand-50 transition"
+        className="flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-2xl px-3.5 py-2 text-sm font-semibold text-brand-500 transition hover:bg-white hover:shadow-sm"
       >
-        <Plus className="w-4 h-4" /> Añadir comida
+        <Plus className="h-4 w-4" /> Añadir
       </button>
     </div>
   ) : null;
 
-  const navClass = "flex-shrink-0 flex items-stretch border-b border-slate-200 bg-white overflow-x-auto";
+  const navClass =
+    "flex-shrink-0 flex items-stretch gap-1 overflow-x-auto border-b border-slate-200/80 bg-[#f7f8fc]/90 px-2 py-2 [scrollbar-width:none] [-webkit-overflow-scrolling:touch]";
 
   // Modo sólo lectura (o un único tiempo): sin dnd, mismo marcado de antes.
   if (!canReorder) {

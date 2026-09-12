@@ -86,16 +86,16 @@ export default function FichaContextBar({
     .join(' · ');
 
   return (
-    <div className="mb-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.04)]">
+    <div className="ng-card-soft mb-4">
       {/* Móvil: una línea + expandir chips */}
-      <div className="flex min-h-12 items-center gap-2 px-3 py-2 sm:hidden">
+      <div className="flex min-h-12 items-center gap-2 px-3 py-2.5 sm:hidden">
         <button
           type="button"
           onClick={() => setChipsOpen((v) => !v)}
           className="min-h-11 min-w-0 flex-1 touch-manipulation text-left"
           aria-expanded={chipsOpen}
         >
-          <p className="truncate text-[13px] font-semibold tabular-nums text-slate-700">
+          <p className="truncate text-[13px] font-semibold tabular-nums text-slate-800">
             {mobileSummary || 'Sin datos de contexto'}
           </p>
           <p className="text-[10px] font-medium text-slate-400">
@@ -105,7 +105,7 @@ export default function FichaContextBar({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex min-h-11 shrink-0 touch-manipulation items-center rounded-full bg-brand-50 px-3.5 text-xs font-semibold text-brand-600"
+          className="inline-flex min-h-11 shrink-0 touch-manipulation items-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 px-4 text-xs font-bold text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]"
           aria-expanded={open}
         >
           {open ? 'Cerrar' : 'Editar'}
