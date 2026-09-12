@@ -19,7 +19,7 @@ import MealTabsNav from "@/components/diet/MealTabsNav";
 import DietEditorToolbar from "@/components/diet/DietEditorToolbar";
 import SaveToCatalogModal from "@/components/diet/SaveToCatalogModal";
 import MacroEditorModal from "@/components/diet/MacroEditorModal";
-import FoodSearch from "@/components/diet/FoodSearch";
+import RecallFoodSearch from "@/components/ficha/dietetica/RecallFoodSearch";
 import { todayLocalDateStr } from "@/lib/weekRange";
 import NutrientInspectorDrawer from "@/components/diet/NutrientInspectorDrawer";
 import FoodSearchModal from "@/components/diet/FoodSearchModal";
@@ -28,8 +28,7 @@ import DietPrintView from "../components/diet/DietPrintView.tsx";
 import { toast } from "@/components/ui/use-toast";
 import { useAutosaveOnLeave } from "@/hooks/useAutosaveOnLeave";
 import { useIsMobile } from "@/hooks/use-mobile";
-// Helpers puros del plan de dieta (constantes, snapshot, macros, mediciones)
-// extraídos a @/lib/dietPlan para poder testearlos sin montar el editor.
+import { buildFoodPlanItem } from "@/lib/dietPlanItem";
 import {
   DEFAULT_MEALS,
   DEFAULT_MEAL_IDS,
@@ -438,6 +437,27 @@ export default function DietCreator() {
   const handleItemAdd = (itemData) => {
     const item = { id: generateId(), ...itemData, quantity: itemData.quantity || 1 };
     setMeals(ms => ms.map(m => m.id === activeMealId ? { ...m, items: [...m.items, item] } : m));
+  };
+
+  /** Adapta el buscador de Dietética (mismo UI) al formato de ítem de dieta. */
+  const handleRecallSearchAdd = (item) => {
+    if (item?.source === "food" && item.food) {
+      handleItemAdd(buildFoodPlanItem(item.food, item.unitQuantity ?? 100, item.unitIndex ?? 0));
+      return;
+    }
+    // USDA u otros: ya vienen con macros listos
+    handleItemAdd({
+      name: item.name,
+      quantity: item.quantity || 1,
+      unit: item.unit,
+      calories: item.calories,
+      protein: item.protein,
+      carbs: item.carbs,
+      fat: item.fat,
+      fiber: item.fiber,
+      sodium: item.sodium,
+      totalGrams: item.totalGrams,
+    });
   };
 
   const handleSaveToCatalog = async () => {
@@ -857,7 +877,7 @@ export default function DietCreator() {
             onClose={() => setFoodModalOpen(false)}
             title={`Agregar a ${activeMeal.name}`}
           >
-            <FoodSearch onAdd={handleItemAdd} />
+            <RecallFoodSearch onAdd={handleRecallSearchAdd} />
           </FoodSearchModal>
         </>
       ) : null}

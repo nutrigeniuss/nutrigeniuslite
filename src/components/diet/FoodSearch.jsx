@@ -168,18 +168,18 @@ export default function FoodSearch({ onAdd }) {
 
   const handleAddFood = async (food) => {
     const st = getState(food.id);
-    const hydrated = await hydrateFoodNutrients(food, user?.id);
-    const source = hydrated === food ? food : {
-      ...buildFoodReferenceView(hydrated, 100),
-      household_measures: normalizeHouseholdMeasuresForDiet(hydrated.household_measures),
-    };
-    onAdd(buildFoodPlanItem(source, st.quantity, st.unitIndex));
+    // Agregar al instante con macros del prefetch (no esperar red).
+    onAdd(buildFoodPlanItem(food, st.quantity, st.unitIndex));
     setAdded((a) => ({ ...a, [food.id]: true }));
     setTimeout(() => setAdded((a) => {
       const c = { ...a };
       delete c[food.id];
       return c;
     }), 1500);
+    // Micros en segundo plano (no bloquea el botón).
+    if (food._lite) {
+      void hydrateFoodNutrients(food, user?.id);
+    }
   };
 
   return (

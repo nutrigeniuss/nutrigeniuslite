@@ -7,7 +7,8 @@ import { logger, errorMessage } from '@/lib/logger';
 const TTL_MS = 24 * 60 * 60 * 1000;
 
 const foodCatalogCache = createLocalCache({
-  key: 'nutrigenius_food_catalog_v1',
+  // v2: invalida caches truncadas a 1000 filas (antes de paginateAll).
+  key: 'nutrigenius_food_catalog_v2',
   ttlMs: TTL_MS,
 });
 
@@ -37,6 +38,11 @@ export const clearFoodCatalogCache = (): void => {
   memoryTimestamp = 0;
   inflight = null;
   foodCatalogCache.clear();
+  try {
+    localStorage.removeItem('nutrigenius_food_catalog_v1');
+  } catch {
+    /* ignore */
+  }
 };
 
 let inflight: Promise<unknown[]> | null = null;

@@ -629,19 +629,31 @@ export const listFoods = async (
 };
 
 export const listAccessibleFoods = async (limit?: number, columns: string = FOOD_LIST_COLUMNS): Promise<{ data: CatalogFoodRecord[]; source: DataSource }> => {
-  let query = supabase
-    .from('foods')
-    .select(columns)
-    .order('name', { ascending: true });
-
+  // Con límite: una sola página (autocomplete). Sin límite: paginar todo el
+  // catálogo — PostgREST corta en 1000 si no usamos range.
   if (typeof limit === 'number') {
-    query = query.limit(limit);
+    const { data, error } = await supabase
+      .from('foods')
+      .select(columns)
+      .order('name', { ascending: true })
+      .limit(limit);
+    if (error) throw error;
+    return {
+      data: ((data as Record<string, unknown>[]) || []).map((food) => normalizeFoodRecord(food)),
+      source: 'supabase',
+    };
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
+  const rows = await paginateAll<Record<string, unknown>>((from, to) =>
+    supabase
+      .from('foods')
+      .select(columns)
+      .order('name', { ascending: true })
+      .range(from, to),
+  );
+
   return {
-    data: ((data as Record<string, unknown>[]) || []).map((food) => normalizeFoodRecord(food)),
+    data: rows.map((food) => normalizeFoodRecord(food)),
     source: 'supabase',
   };
 };

@@ -164,9 +164,6 @@ export default function Recall24hEditor({
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-bold text-slate-800">Recordatorio 24h — {dateLabel}</p>
-          <p className="mt-0.5 text-xs text-slate-400">
-            Calculadora · mismos alimentos que Dieta · se limpia con Nueva ficha
-          </p>
         </div>
         {!embedded && typeof onClose === "function" ? (
           <button

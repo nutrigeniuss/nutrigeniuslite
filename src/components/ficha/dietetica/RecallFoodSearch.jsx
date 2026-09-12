@@ -149,32 +149,27 @@ export default function RecallFoodSearch({ onAdd }) {
 
   const handleAddFood = async (food) => {
     const st = getState(food.id);
-    // El registro que llega es "procesado ligero" (processFoodsForSearch pierde
-    // el JSON `nutrients` cuando el prefetch es ligero). Buscamos el crudo por
-    // id, lo hidratamos y lo RE-procesamos con la misma función para que los
-    // micros queden escalados a 100 g igual que si se hubiera bajado completo.
+    // Agregar al instante; hidratar micros no debe congelar el clic.
     let source = food;
     const rawLite = foods.find((f) => f.id === food.id);
-    if (rawLite?._lite) {
-      const full = await hydrateFoodNutrients(rawLite, user?.id);
-      if (full && full !== rawLite) {
-        const [reprocessed] = processFoodsForSearch([full]);
-        if (reprocessed) source = reprocessed;
-      }
-    }
-    // Guardamos el alimento + unidad + cantidad como "base" para poder editar
-    // medida casera y gramos después, ya dentro de la comida.
     const fields = computeFoodItemFields(source, st.unitIndex, st.quantity);
     onAdd({ source: "food", food: source, name: source.name, quantity: 1, ...fields });
-    setAdded(a => ({ ...a, [food.id]: true }));
-    setTimeout(() => setAdded(a => { const c = { ...a }; delete c[food.id]; return c; }), 1500);
+    setAdded((a) => ({ ...a, [food.id]: true }));
+    setTimeout(() => setAdded((a) => { const c = { ...a }; delete c[food.id]; return c; }), 1500);
+
+    if (rawLite?._lite) {
+      void hydrateFoodNutrients(rawLite, user?.id).then((full) => {
+        if (!full || full === rawLite) return;
+        // Solo precalienta caché de detalle; el ítem ya está en la comida.
+      });
+    }
   };
 
   const currentSearch = tab === "alimentos" ? foodSearch : usdaSearch;
   const setCurrentSearch = tab === "alimentos" ? setFoodSearch : setUsdaSearch;
 
   const TABS = [
-    { key: "alimentos", label: "Mis Alimentos", count: filteredFoods.length },
+    { key: "alimentos", label: "Mis Alimentos", count: processedFoods.length },
     { key: "usda", label: "Base USDA", count: null },
   ];
 
