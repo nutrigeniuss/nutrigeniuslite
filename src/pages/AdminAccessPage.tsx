@@ -41,6 +41,7 @@ export default function AdminAccessPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [durationDrafts, setDurationDrafts] = useState<Record<string, AccessDays>>({});
+  const [createOpen, setCreateOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!supabase) {
@@ -158,7 +159,9 @@ export default function AdminAccessPage() {
       setError('No se puede cambiar la clave de una cuenta admin');
       return;
     }
-    const password = window.prompt(`Nueva contraseña temporal (mín. ${MIN_PASSWORD_LENGTH})`);
+    const password = window.prompt(
+      `Nueva contraseña para el usuario (mín. ${MIN_PASSWORD_LENGTH} caracteres).\nNo es temporal: es la clave con la que entrará. Compártela por WhatsApp.`,
+    );
     if (!password) return;
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
@@ -208,16 +211,23 @@ export default function AdminAccessPage() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
+    <div className="mx-auto min-h-screen max-w-4xl px-4 py-6 sm:px-6">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <BackNav to="/app" label="Volver a la calculadora" />
           <h1 className="ng-page-title mt-3">Módulo maestro</h1>
-          <p className="ng-muted mt-1">Acceso de cuentas · subir base maestra de alimentos</p>
+          <p className="ng-muted mt-1">Cuentas y acceso · base maestra de alimentos</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/admin/alimentos" className="ng-btn-primary">
-            Subir base maestra
+          <button
+            type="button"
+            onClick={() => setCreateOpen((open) => !open)}
+            className="ng-btn-primary"
+          >
+            {createOpen ? 'Cerrar formulario' : 'Crear cuenta'}
+          </button>
+          <Link to="/admin/alimentos" className="ng-btn-ghost">
+            Base maestra
           </Link>
           <button type="button" onClick={() => void load()} className="ng-btn-ghost">
             Actualizar
@@ -227,30 +237,39 @@ export default function AdminAccessPage() {
 
       {error ? <p className="mb-3 rounded-2xl bg-coral-50 px-4 py-3 text-sm text-coral-600">{error}</p> : null}
 
-      <div className="mb-6">
-        <CreateNutritionistForm busy={busyId !== null} onSubmit={create} />
-      </div>
+      {createOpen ? (
+        <div className="mb-6">
+          <CreateNutritionistForm busy={busyId !== null} onSubmit={create} />
+        </div>
+      ) : null}
 
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <UserAccessCard
-            key={row.id}
-            row={row}
-            selfId={user?.id}
-            busy={busyId !== null}
-            durationDraft={draftFor(row.id)}
-            onDurationDraftChange={(days) => setDraft(row.id, days)}
-            onGrant={() => void grant(row.id, draftFor(row.id))}
-            onRevoke={() => void revoke(row.id)}
-            onResetPassword={() => void resetPassword(row.id)}
-            onDelete={() => void remove(row.id)}
-          />
-        ))}
-        {rows.length === 0 && !error ? (
-          <p className="rounded-2xl bg-white px-4 py-8 text-center text-sm text-slate-400 ring-1 ring-slate-200/80">
-            Aún no hay perfiles. Crea uno arriba o espera a que alguien se registre.
+      <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/80">
+        <div className="border-b border-slate-100 px-4 py-2.5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            {rows.length} cuenta{rows.length === 1 ? '' : 's'}
           </p>
-        ) : null}
+        </div>
+        <div>
+          {rows.map((row) => (
+            <UserAccessCard
+              key={row.id}
+              row={row}
+              selfId={user?.id}
+              busy={busyId !== null}
+              durationDraft={draftFor(row.id)}
+              onDurationDraftChange={(days) => setDraft(row.id, days)}
+              onGrant={() => void grant(row.id, draftFor(row.id))}
+              onRevoke={() => void revoke(row.id)}
+              onResetPassword={() => void resetPassword(row.id)}
+              onDelete={() => void remove(row.id)}
+            />
+          ))}
+          {rows.length === 0 && !error ? (
+            <p className="px-4 py-10 text-center text-sm text-slate-400">
+              Aún no hay perfiles. Pulsa “Crear cuenta” o espera un registro.
+            </p>
+          ) : null}
+        </div>
       </div>
     </div>
   );

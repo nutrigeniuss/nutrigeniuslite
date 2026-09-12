@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   isAdminProfile,
   resolveAdminRowStatus,
@@ -42,32 +43,32 @@ function formatExpiry(iso: string | null): string | null {
 function statusLabel(status: AdminRowStatus, expiresAt: string | null): string {
   switch (status) {
     case 'admin':
-      return 'Acceso permanente';
+      return 'Admin';
     case 'active': {
       const expiry = formatExpiry(expiresAt);
-      return expiry ? `con acceso · vence ${expiry}` : 'con acceso · sin vencimiento';
+      return expiry ? `Activo · ${expiry}` : 'Activo · sin vencer';
     }
     case 'expired':
-      return 'vencido';
+      return 'Vencido';
     case 'disabled':
-      return 'sin acceso';
+      return 'Sin acceso';
     case 'pending':
-      return 'pendiente';
+      return 'Pendiente';
   }
 }
 
 function statusClass(status: AdminRowStatus): string {
   switch (status) {
     case 'admin':
-      return 'text-slate-600';
+      return 'bg-slate-100 text-slate-700';
     case 'active':
-      return 'text-energy-600';
+      return 'bg-emerald-50 text-emerald-700';
     case 'expired':
-      return 'text-coral-600';
+      return 'bg-coral-50 text-coral-700';
     case 'disabled':
-      return 'text-coral-600';
+      return 'bg-slate-50 text-slate-500';
     case 'pending':
-      return 'text-amber-600';
+      return 'bg-amber-50 text-amber-700';
   }
 }
 
@@ -82,71 +83,91 @@ export default function UserAccessCard({
   onResetPassword,
   onDelete,
 }: Props) {
+  const [grantOpen, setGrantOpen] = useState(false);
   const status = resolveAdminRowStatus(row);
   const isAdmin = isAdminProfile(row);
   const isSelf = Boolean(selfId && selfId === row.id);
   const canManage = !isAdmin && !isSelf;
 
   return (
-    <div className="ng-card p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-bold text-slate-900">
+    <div className="border-b border-slate-100 px-3 py-2.5 last:border-b-0 sm:px-4">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900">
             {row.full_name || 'Sin nombre'}
-            {isSelf ? <span className="ng-muted ml-2">(tú)</span> : null}
+            {isSelf ? <span className="ml-1.5 text-xs font-medium text-slate-400">(tú)</span> : null}
           </p>
-          <p className="ng-muted">{row.email}</p>
-          <p className={`mt-1 text-xs font-semibold ${statusClass(status)}`}>
-            {statusLabel(status, row.access_expires_at)}
-          </p>
+          <p className="truncate text-xs text-slate-500">{row.email}</p>
         </div>
 
-        {isAdmin ? (
-          <span className="ng-pill ng-pill-idle">Acceso permanente</span>
-        ) : null}
-      </div>
+        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusClass(status)}`}>
+          {statusLabel(status, row.access_expires_at)}
+        </span>
 
-      {canManage ? (
-        <div className="mt-4 space-y-3 border-t border-slate-100 pt-3">
-          <AccessDurationPicker
-            value={durationDraft}
-            onChange={onDurationDraftChange}
-            disabled={busy}
-          />
-          <div className="flex flex-wrap gap-2">
+        {canManage ? (
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               disabled={busy}
-              onClick={onGrant}
-              className="ng-btn-primary disabled:opacity-40"
+              onClick={() => setGrantOpen((open) => !open)}
+              className="rounded-full bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
             >
-              Dar / Renovar acceso
+              {status === 'active' ? 'Renovar' : 'Dar acceso'}
             </button>
             <button
               type="button"
               disabled={busy}
               onClick={onRevoke}
-              className="ng-btn-ghost text-coral-600 disabled:opacity-40"
+              className="rounded-full px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
             >
-              Quitar acceso
+              Quitar
             </button>
             <button
               type="button"
               disabled={busy}
               onClick={onResetPassword}
-              className="ng-btn-ghost disabled:opacity-40"
+              className="rounded-full px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
             >
-              Cambiar clave
+              Clave
             </button>
             <button
               type="button"
               disabled={busy}
               onClick={onDelete}
-              className="ng-btn-ghost text-coral-600 disabled:opacity-40"
+              className="rounded-full px-2.5 py-1.5 text-xs font-semibold text-coral-600 hover:bg-coral-50 disabled:opacity-40"
             >
               Eliminar
             </button>
           </div>
+        ) : null}
+      </div>
+
+      {canManage && grantOpen ? (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5">
+          <AccessDurationPicker
+            value={durationDraft}
+            onChange={onDurationDraftChange}
+            disabled={busy}
+          />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              onGrant();
+              setGrantOpen(false);
+            }}
+            className="rounded-full bg-brand-500 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40"
+          >
+            Confirmar
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setGrantOpen(false)}
+            className="rounded-full px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-white disabled:opacity-40"
+          >
+            Cancelar
+          </button>
         </div>
       ) : null}
     </div>
