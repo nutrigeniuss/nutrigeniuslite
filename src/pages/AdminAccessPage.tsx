@@ -6,6 +6,7 @@ import {
   buildGrantProfilePatch,
   buildRevokeProfilePatch,
   isAdminProfile,
+  resolveDurationDraft,
   type AccessDays,
 } from '@/lib/adminAccess';
 import {
@@ -64,7 +65,7 @@ export default function AdminAccessPage() {
     void load();
   }, [load]);
 
-  const draftFor = (id: string): AccessDays => durationDrafts[id] ?? DEFAULT_DAYS;
+  const draftFor = (id: string): AccessDays => resolveDurationDraft(durationDrafts, id, DEFAULT_DAYS);
 
   const setDraft = (id: string, days: AccessDays) => {
     setDurationDrafts((prev) => ({ ...prev, [id]: days }));

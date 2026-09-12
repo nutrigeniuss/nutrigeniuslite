@@ -13,6 +13,15 @@ export function expiresAtFromDays(days: AccessDays, now: Date = new Date()): str
   return new Date(ms).toISOString();
 }
 
+/** Lee borrador de duración; `null` es «sin vencimiento», no fallback. */
+export function resolveDurationDraft(
+  drafts: Record<string, AccessDays>,
+  id: string,
+  fallback: AccessDays = 45,
+): AccessDays {
+  return Object.prototype.hasOwnProperty.call(drafts, id) ? drafts[id]! : fallback;
+}
+
 export function buildGrantProfilePatch(days: AccessDays, now: Date = new Date()) {
   return {
     access_mode: 'manual_preview' as const,

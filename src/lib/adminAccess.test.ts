@@ -5,9 +5,18 @@ import {
   expiresAtFromDays,
   isAdminProfile,
   resolveAdminRowStatus,
+  resolveDurationDraft,
 } from './adminAccess';
 
 const FIXED = new Date('2026-09-10T12:00:00.000Z');
+
+describe('resolveDurationDraft', () => {
+  it('keeps null as unlimited (does not fall back with ??)', () => {
+    expect(resolveDurationDraft({ u1: null }, 'u1', 45)).toBeNull();
+    expect(resolveDurationDraft({ u1: 30 }, 'u1', 45)).toBe(30);
+    expect(resolveDurationDraft({}, 'u1', 45)).toBe(45);
+  });
+});
 
 describe('expiresAtFromDays', () => {
   it('returns null for unlimited', () => {
