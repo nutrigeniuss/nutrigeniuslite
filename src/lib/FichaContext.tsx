@@ -123,7 +123,15 @@ function loadStored(): { patient: FichaPatient; dietMode: DietMode; dietWeek: Di
     if (!raw) return { patient: defaultPatient(), dietMode: 'alimentos', dietWeek: emptyWeek() };
     const parsed = JSON.parse(raw) as Partial<{ patient: FichaPatient; dietMode: DietMode; dietWeek: DietWeekDay[] }>;
     return {
-      patient: { ...defaultPatient(), ...(parsed.patient || {}), measurements: parsed.patient?.measurements?.length ? parsed.patient.measurements : defaultPatient().measurements },
+      patient: {
+        ...defaultPatient(),
+        ...(parsed.patient || {}),
+        measurements: parsed.patient?.measurements?.length
+          ? parsed.patient.measurements
+          : defaultPatient().measurements,
+        // Nunca hidratar bioquímica persistida: Lite solo calcula.
+        biochemistry: [],
+      },
       dietMode: parsed.dietMode || 'alimentos',
       dietWeek: parsed.dietWeek?.length ? parsed.dietWeek : emptyWeek(),
     };
@@ -141,11 +149,23 @@ export function FichaProvider({ children }: { children: ReactNode }) {
   const [dietWeek, setDietWeek] = useState<DietWeekDay[]>(initial.dietWeek);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ patient, dietMode, dietWeek }));
+    // Bioquímica es solo cálculo: no se archiva en localStorage.
+    const { biochemistry: _ignored, ...restPatient } = patient;
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ patient: { ...restPatient, biochemistry: [] }, dietMode, dietWeek }),
+    );
   }, [patient, dietMode, dietWeek]);
 
   const updatePatient = useCallback(async (patch: Partial<FichaPatient>) => {
-    setPatient((prev) => ({ ...prev, ...patch }));
+    // Ignorar escrituras de biochemistry desde cualquier pantalla.
+    if (patch && 'biochemistry' in patch) {
+      const { biochemistry: _drop, ...rest } = patch;
+      if (Object.keys(rest).length === 0) return true;
+      setPatient((prev) => ({ ...prev, ...rest, biochemistry: [] }));
+      return true;
+    }
+    setPatient((prev) => ({ ...prev, ...patch, biochemistry: [] }));
     return true;
   }, []);
 

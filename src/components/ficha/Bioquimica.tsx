@@ -16,6 +16,7 @@ type BiochemPatient = BiochemPatientContext & {
 
 type BioquimicaProps = {
   patient: BiochemPatient;
+  /** Solo para datos de paciente no-lab (p. ej. peso habitual). La bioquímica NO se persiste. */
   onUpdate: PatientUpdateFn;
   registerAutosave?: (handler: (() => Promise<void>) | null) => void;
 };
@@ -40,14 +41,31 @@ const formatDateParts = (dateStr?: string | null): { day: string; monthYear: str
   };
 };
 
+/**
+ * Bioquímica Lite = calculadora en memoria.
+ * No escribe `biochemistry` en la ficha / localStorage.
+ */
 export default function Bioquimica({ patient, onUpdate, registerAutosave }: BioquimicaProps) {
+  const [entries, setEntries] = useState<LabEntry[]>([]);
   const [showNew, setShowNew] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [entryToDelete, setEntryToDelete] = useState<LabEntry | null>(null);
   const detailAutosaveRef = useRef<(() => Promise<void>) | null>(null);
   const { ranges: accountRanges, saveRange } = useLabReferenceRanges();
-  const sex = useMemo(() => parseSexKey((patient.gender ?? patient.sex) as string | null), [patient.gender, patient.sex]);
-  const entries = useMemo(() => patient.biochemistry || [], [patient.biochemistry]);
+  const sex = useMemo(
+    () => parseSexKey((patient.gender ?? patient.sex) as string | null),
+    [patient.gender, patient.sex],
+  );
+
+  const applyLocalUpdate = useCallback<PatientUpdateFn>(async (patch) => {
+    if (patch && typeof patch === 'object' && 'biochemistry' in patch) {
+      const next = Array.isArray(patch.biochemistry) ? (patch.biochemistry as LabEntry[]) : [];
+      setEntries(next);
+      return true;
+    }
+    // Otros patches (p. ej. reference_weights) no son historial de lab.
+    return onUpdate(patch);
+  }, [onUpdate]);
 
   const registerDetailAutosave = useCallback((handler: (() => Promise<void>) | null): void => {
     detailAutosaveRef.current = handler;
@@ -84,7 +102,7 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
         accountRanges={accountRanges}
         onSaveAccountRange={(key, range) => { void saveRange(key, range); }}
         onBack={() => setSelected(null)}
-        onUpdate={onUpdate}
+        onUpdate={applyLocalUpdate}
         registerAutosave={registerDetailAutosave}
       />
     );
@@ -99,14 +117,13 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
           </span>
           <div>
             <h3 className="ng-display text-lg font-semibold tracking-tight text-slate-900">Bioquímica</h3>
-            <p className="ng-muted mt-0.5">{entries.length} toma{entries.length === 1 ? '' : 's'} registrada{entries.length === 1 ? '' : 's'}</p>
+            <p className="ng-muted mt-0.5">
+              Solo cálculo · no se guarda en la ficha
+              {entries.length > 0 ? ` · ${entries.length} toma${entries.length === 1 ? '' : 's'} en pantalla` : ''}
+            </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowNew(true)}
-          className={pillActive}
-        >
+        <button type="button" onClick={() => setShowNew(true)} className={pillActive}>
           <Plus className="h-3.5 w-3.5" /> Nueva toma
         </button>
       </div>
@@ -114,12 +131,9 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
       {sorted.length === 0 ? (
         <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-[#fafbfd] px-5 py-14 text-center">
           <FlaskConical className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-semibold text-slate-600">Sin exámenes todavía</p>
-          <button
-            type="button"
-            onClick={() => setShowNew(true)}
-            className="ng-btn-primary mt-4"
-          >
+          <p className="mt-3 text-sm font-semibold text-slate-600">Sin exámenes en esta sesión</p>
+          <p className="ng-muted mt-1">Al salir o cambiar de pestaña, el cálculo no se archiva.</p>
+          <button type="button" onClick={() => setShowNew(true)} className="ng-btn-primary mt-4">
             <Plus className="h-3.5 w-3.5" /> Agregar toma
           </button>
         </div>
@@ -179,13 +193,10 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
               ranges: {},
               created_at: new Date().toISOString(),
             };
-            const next = [newEntry, ...entries];
-            const ok = await onUpdate({ biochemistry: next });
+            setEntries((prev) => [newEntry, ...prev]);
             setShowNew(false);
-            if (ok) {
-              setSelected(0);
-              toast({ title: 'Toma creada' });
-            }
+            setSelected(0);
+            toast({ title: 'Toma lista para calcular', description: 'No se guarda en la ficha.' });
           }}
         />
       ) : null}
@@ -193,16 +204,13 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
       <ConfirmationDialog
         open={Boolean(entryToDelete)}
         onOpenChange={(open: boolean) => { if (!open) setEntryToDelete(null); }}
-        title="Eliminar toma"
-        description="Se quitará este examen de la ficha."
-        confirmLabel="Eliminar"
+        title="Quitar toma"
+        description="Se quita de esta pantalla. No había historial guardado."
+        confirmLabel="Quitar"
         onConfirm={() => {
-          void (async () => {
-            if (!entryToDelete) return;
-            const next = entries.filter((e) => e.id !== entryToDelete.id);
-            await onUpdate({ biochemistry: next });
-            setEntryToDelete(null);
-          })();
+          if (!entryToDelete) return;
+          setEntries((prev) => prev.filter((e) => e.id !== entryToDelete.id));
+          setEntryToDelete(null);
         }}
       />
     </div>

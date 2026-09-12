@@ -66,15 +66,6 @@ export default function ResultsSummary({ data, sex, ageYears }) {
 
   const cells = [
     {
-      key: 'peso',
-      label: 'Peso',
-      value: v(w) ? w : null,
-      unit: 'kg',
-      hint: null,
-      tone: null,
-      accent: false,
-    },
-    {
       key: 'imc',
       label: 'IMC',
       value: bmi.value,
@@ -127,7 +118,7 @@ export default function ResultsSummary({ data, sex, ageYears }) {
   return (
     <div
       data-testid="results-summary"
-      className="grid grid-cols-2 gap-2 rounded-[1.5rem] border border-slate-200/80 bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:grid-cols-3 sm:gap-3 sm:p-4 lg:grid-cols-6"
+      className="grid grid-cols-2 gap-2 rounded-[1.5rem] border border-slate-200/80 bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:grid-cols-3 sm:gap-3 sm:p-4 lg:grid-cols-5"
     >
       {cells.map((cell) => (
         <SummaryCell key={cell.key} {...cell} />

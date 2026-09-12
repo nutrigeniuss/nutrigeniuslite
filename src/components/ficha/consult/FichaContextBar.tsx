@@ -135,34 +135,6 @@ export default function FichaContextBar({
             />
           </label>
           <label className="text-[11px] font-semibold text-slate-500">
-            Peso (kg)
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium tabular-nums text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-              value={measurement.weight ?? ''}
-              onChange={(e) => {
-                const raw = e.target.value;
-                onMeasurementChange({ weight: raw === '' ? null : Number(raw) });
-              }}
-            />
-          </label>
-          <label className="text-[11px] font-semibold text-slate-500">
-            Talla (cm)
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium tabular-nums text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-              value={measurement.height ?? ''}
-              onChange={(e) => {
-                const raw = e.target.value;
-                onMeasurementChange({ height: raw === '' ? null : Number(raw) });
-              }}
-            />
-          </label>
-          <label className="text-[11px] font-semibold text-slate-500">
             Fecha de evaluación
             <input
               type="date"
