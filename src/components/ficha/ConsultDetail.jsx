@@ -343,6 +343,7 @@ export default function ConsultDetail({
         ) : tab === "bioq" ? (
           <div className={`${shellClass} ng-inset`}>
             <Bioquimica
+              key={`bioq-${tab}`}
               patient={patient}
               onUpdate={async (patch) => {
                 if (onPatientUpdate) return onPatientUpdate(patch);

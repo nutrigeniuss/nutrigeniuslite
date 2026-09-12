@@ -8,10 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 
-const STORAGE_KEY = 'ng_lite_calc_ficha_v1';
+const STORAGE_KEY = 'ng_lite_calc_ficha_v2';
+const LEGACY_STORAGE_KEYS = ['ng_lite_calc_ficha_v1'];
 
 // Borrador de trabajo en el navegador (calculadora). No es archivo clínico:
-// se limpia con «Nueva ficha». Si el usuario sale con datos, es solo sesión local.
+// se limpia con «Nueva ficha». Bioquímica NUNCA se persiste.
 
 export type FichaMeasurement = {
   date?: string;
@@ -34,6 +35,7 @@ export type FichaPatient = {
   sex?: string | null;
   measurements: FichaMeasurement[];
   pregnancies?: import('@/lib/gestation/gestationalGain').PregnancyRecord[];
+  /** Siempre [] en Lite: bioquímica solo en memoria de la pestaña. */
   biochemistry?: import('@/components/ficha/biochem/biochemConfig').LabEntry[];
   health_conditions?: { current_pathologies?: string[] };
   requirement?: Record<string, unknown>;
@@ -60,6 +62,8 @@ type FichaState = {
   patient: FichaPatient;
   dietMode: DietMode;
   dietWeek: DietWeekDay[];
+  /** Sube con «Nueva ficha» para remount de ConsultDetail / Bioquímica. */
+  fichaRevision: number;
   updatePatient: (patch: Partial<FichaPatient>) => Promise<boolean>;
   setDietMode: (mode: DietMode) => void;
   setDietWeek: (week: DietWeekDay[] | ((prev: DietWeekDay[]) => DietWeekDay[])) => void;
@@ -117,21 +121,34 @@ function defaultPatient(): FichaPatient {
   };
 }
 
+function stripBiochemistry(patient: FichaPatient): FichaPatient {
+  const { biochemistry: _drop, ...rest } = patient;
+  return { ...rest, biochemistry: [] };
+}
+
+function persistablePatient(patient: FichaPatient): FichaPatient {
+  return stripBiochemistry(patient);
+}
+
 function loadStored(): { patient: FichaPatient; dietMode: DietMode; dietWeek: DietWeekDay[] } {
   try {
+    // Purga claves viejas que pudieron guardar bioquímica.
+    for (const legacy of LEGACY_STORAGE_KEYS) {
+      localStorage.removeItem(legacy);
+    }
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { patient: defaultPatient(), dietMode: 'alimentos', dietWeek: emptyWeek() };
     const parsed = JSON.parse(raw) as Partial<{ patient: FichaPatient; dietMode: DietMode; dietWeek: DietWeekDay[] }>;
+    const merged = {
+      ...defaultPatient(),
+      ...(parsed.patient || {}),
+      measurements: parsed.patient?.measurements?.length
+        ? parsed.patient.measurements
+        : defaultPatient().measurements,
+    };
     return {
-      patient: {
-        ...defaultPatient(),
-        ...(parsed.patient || {}),
-        measurements: parsed.patient?.measurements?.length
-          ? parsed.patient.measurements
-          : defaultPatient().measurements,
-        // Nunca hidratar bioquímica persistida: Lite solo calcula.
-        biochemistry: [],
-      },
+      patient: persistablePatient(merged),
       dietMode: parsed.dietMode || 'alimentos',
       dietWeek: parsed.dietWeek?.length ? parsed.dietWeek : emptyWeek(),
     };
@@ -147,25 +164,28 @@ export function FichaProvider({ children }: { children: ReactNode }) {
   const [patient, setPatient] = useState<FichaPatient>(initial.patient);
   const [dietMode, setDietMode] = useState<DietMode>(initial.dietMode);
   const [dietWeek, setDietWeek] = useState<DietWeekDay[]>(initial.dietWeek);
+  const [fichaRevision, setFichaRevision] = useState(0);
 
   useEffect(() => {
-    // Bioquímica es solo cálculo: no se archiva en localStorage.
-    const { biochemistry: _ignored, ...restPatient } = patient;
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ patient: { ...restPatient, biochemistry: [] }, dietMode, dietWeek }),
+      JSON.stringify({
+        patient: persistablePatient(patient),
+        dietMode,
+        dietWeek,
+      }),
     );
   }, [patient, dietMode, dietWeek]);
 
   const updatePatient = useCallback(async (patch: Partial<FichaPatient>) => {
-    // Ignorar escrituras de biochemistry desde cualquier pantalla.
+    // Bioquímica no entra al estado de ficha ni a localStorage.
     if (patch && 'biochemistry' in patch) {
       const { biochemistry: _drop, ...rest } = patch;
       if (Object.keys(rest).length === 0) return true;
-      setPatient((prev) => ({ ...prev, ...rest, biochemistry: [] }));
+      setPatient((prev) => persistablePatient({ ...prev, ...rest }));
       return true;
     }
-    setPatient((prev) => ({ ...prev, ...patch, biochemistry: [] }));
+    setPatient((prev) => persistablePatient({ ...prev, ...patch }));
     return true;
   }, []);
 
@@ -174,23 +194,31 @@ export function FichaProvider({ children }: { children: ReactNode }) {
     setPatient(blank);
     setDietMode('alimentos');
     setDietWeek(emptyWeek());
+    setFichaRevision((n) => n + 1);
     try {
+      for (const legacy of LEGACY_STORAGE_KEYS) localStorage.removeItem(legacy);
       localStorage.removeItem(STORAGE_KEY);
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         patient: blank,
         dietMode: 'alimentos',
         dietWeek: emptyWeek(),
       }));
-      // Dietas de sesión y caches locales de la ficha.
       Object.keys(localStorage).forEach((key) => {
         if (
           key.startsWith('ng_session_diet')
           || key.startsWith('nutrigenius_session')
           || key.startsWith('ng_calc_ficha')
+          || key.startsWith('ng_lite_calc_ficha')
         ) {
           localStorage.removeItem(key);
         }
       });
+      // Reponer ficha limpia tras el barrido amplio.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        patient: blank,
+        dietMode: 'alimentos',
+        dietWeek: emptyWeek(),
+      }));
     } catch {
       /* ignore */
     }
@@ -200,11 +228,12 @@ export function FichaProvider({ children }: { children: ReactNode }) {
     patient,
     dietMode,
     dietWeek,
+    fichaRevision,
     updatePatient,
     setDietMode,
     setDietWeek,
     resetFicha,
-  }), [patient, dietMode, dietWeek, updatePatient, resetFicha]);
+  }), [patient, dietMode, dietWeek, fichaRevision, updatePatient, resetFicha]);
 
   return <FichaContext.Provider value={value}>{children}</FichaContext.Provider>;
 }

@@ -118,8 +118,8 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
           <div>
             <h3 className="ng-display text-lg font-semibold tracking-tight text-slate-900">Bioquímica</h3>
             <p className="ng-muted mt-0.5">
-              Solo cálculo · no se guarda en la ficha
-              {entries.length > 0 ? ` · ${entries.length} toma${entries.length === 1 ? '' : 's'} en pantalla` : ''}
+              Solo cálculo temporal · se pierde al cambiar de pestaña
+              {entries.length > 0 ? ` · ${entries.length} toma${entries.length === 1 ? '' : 's'} ahora` : ''}
             </p>
           </div>
         </div>
@@ -131,8 +131,8 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
       {sorted.length === 0 ? (
         <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-[#fafbfd] px-5 py-14 text-center">
           <FlaskConical className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-semibold text-slate-600">Sin exámenes en esta sesión</p>
-          <p className="ng-muted mt-1">Al salir o cambiar de pestaña, el cálculo no se archiva.</p>
+          <p className="mt-3 text-sm font-semibold text-slate-600">Sin exámenes en pantalla</p>
+          <p className="ng-muted mt-1">No se guarda: al cambiar de pestaña o refrescar, queda vacío.</p>
           <button type="button" onClick={() => setShowNew(true)} className="ng-btn-primary mt-4">
             <Plus className="h-3.5 w-3.5" /> Agregar toma
           </button>
@@ -196,7 +196,7 @@ export default function Bioquimica({ patient, onUpdate, registerAutosave }: Bioq
             setEntries((prev) => [newEntry, ...prev]);
             setShowNew(false);
             setSelected(0);
-            toast({ title: 'Toma lista para calcular', description: 'No se guarda en la ficha.' });
+            toast({ title: 'Listo para calcular', description: 'Temporal: no se guarda al salir de Bioquímica.' });
           }}
         />
       ) : null}

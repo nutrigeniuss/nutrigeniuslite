@@ -8,7 +8,7 @@ import ConsultDetail from '@/components/ficha/ConsultDetail';
 
 function FichaShell() {
   const { profile, signOut, admin } = useAuth();
-  const { patient, updatePatient, resetFicha } = useFicha();
+  const { patient, updatePatient, resetFicha, fichaRevision } = useFicha();
   const [signingOut, setSigningOut] = useState(false);
 
   const handleNuevaFicha = () => {
@@ -65,6 +65,7 @@ function FichaShell() {
       </header>
 
       <ConsultDetail
+        key={fichaRevision}
         embedded
         patient={patient}
         consultIndex={0}
