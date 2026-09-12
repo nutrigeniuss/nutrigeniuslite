@@ -32,7 +32,7 @@ type AuthState = {
   requestPasswordReset: (email: string) => Promise<{ error?: string }>;
   updatePassword: (password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<ProfileRow | null>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -66,13 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const lastTouchRef = useRef(0);
 
-  const refreshProfile = useCallback(async () => {
+  const refreshProfile = useCallback(async (): Promise<ProfileRow | null> => {
     const uid = (await supabase?.auth.getUser())?.data.user?.id;
     if (!uid) {
       setProfile(null);
-      return;
+      return null;
     }
-    setProfile(await fetchProfile(uid));
+    const next = await fetchProfile(uid);
+    setProfile(next);
+    return next;
   }, []);
 
   useEffect(() => {

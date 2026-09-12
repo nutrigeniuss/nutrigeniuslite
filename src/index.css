@@ -156,10 +156,21 @@
   font-weight: 700;
   color: #fff;
   box-shadow: 0 8px 18px rgba(59, 95, 235, 0.22);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .ng-btn-primary:hover {
   background: #2f4cd4;
+}
+
+.ng-btn-primary:active {
+  transform: scale(0.96);
+  background: #2943bd;
+}
+
+.ng-btn-primary:focus-visible {
+  outline: 2px solid rgba(59, 95, 235, 0.45);
+  outline-offset: 2px;
 }
 
 .ng-btn-ghost {
@@ -174,6 +185,30 @@
   font-weight: 600;
   color: #475569;
   box-shadow: inset 0 0 0 1px #e2e8f0;
+  transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.ng-btn-ghost:hover {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.ng-btn-ghost:active {
+  transform: scale(0.96);
+  background: #f1f5f9;
+  box-shadow: inset 0 0 0 1px #cbd5e1;
+}
+
+.ng-btn-ghost:focus-visible {
+  outline: 2px solid rgba(59, 95, 235, 0.45);
+  outline-offset: 2px;
+}
+
+.ng-btn-ghost:disabled,
+.ng-btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
 }
 
 .ng-input {

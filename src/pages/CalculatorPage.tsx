@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eraser, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
@@ -8,6 +9,7 @@ import ConsultDetail from '@/components/ficha/ConsultDetail';
 function FichaShell() {
   const { profile, signOut, admin } = useAuth();
   const { patient, updatePatient, resetFicha } = useFicha();
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleNuevaFicha = () => {
     if (!window.confirm(
@@ -16,6 +18,16 @@ function FichaShell() {
       return;
     }
     resetFicha();
+  };
+
+  const handleSalir = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   return (
@@ -39,8 +51,15 @@ function FichaShell() {
               <Shield className="h-3.5 w-3.5" /> Maestro
             </Link>
           ) : null}
-          <button type="button" onClick={() => void signOut()} className="ng-btn-ghost">
-            <LogOut className="h-3.5 w-3.5" /> Salir
+          <button
+            type="button"
+            onClick={() => void handleSalir()}
+            disabled={signingOut}
+            aria-busy={signingOut}
+            className="ng-btn-ghost"
+          >
+            <LogOut className={`h-3.5 w-3.5 ${signingOut ? 'animate-pulse' : ''}`} />
+            {signingOut ? 'Saliendo…' : 'Salir'}
           </button>
         </div>
       </header>
