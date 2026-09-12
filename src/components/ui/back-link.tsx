@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
-import type { ReactNode, ButtonHTMLAttributes } from 'react';
+import type { ReactNode, ButtonHTMLAttributes, MouseEvent } from 'react';
 
 type BackLinkProps = {
   onClick?: () => void;
@@ -17,14 +17,21 @@ export default function BackLink({
   compact = false,
 }: BackLinkProps) {
   if (!onClick) return null;
+
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onClick();
+  };
+
   return (
     <button
       type="button"
-      onClick={onClick}
-      className={`ng-back ${compact ? '!px-3 !py-2' : ''} ${className}`.trim()}
+      onClick={handleClick}
+      className={`ng-back touch-manipulation ${compact ? '!min-h-11 !px-3 !py-2.5' : ''} ${className}`.trim()}
     >
-      <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.4} />
-      <span>{label}</span>
+      <ArrowLeft className="pointer-events-none h-4 w-4 shrink-0" strokeWidth={2.4} />
+      <span className="pointer-events-none">{label}</span>
     </button>
   );
 }

@@ -245,6 +245,12 @@
   color: #1e293b;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  /* Evita el delay de 300ms y gestos raros al tocar en móvil. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(59, 95, 235, 0.15);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .ng-back:hover {
@@ -252,6 +258,11 @@
   background: #eef2ff;
   color: #2f4cd4;
   box-shadow: 0 8px 20px rgba(59, 95, 235, 0.12);
+}
+
+.ng-back:active {
+  background: #e0e7ff;
+  border-color: #3b5feb;
 }
 
 /* Landing: funciones (marketing) */

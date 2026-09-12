@@ -100,23 +100,25 @@ export default function EditableMealItemRow({ item, onChange, onRemove }) {
   }
 
   return (
-    <tr className="group hover:bg-slate-50 transition">
-      <td className="px-3 py-2 text-center align-top">{quantityCell}</td>
-      <td className="px-3 py-2">
-        <p className="text-xs font-semibold text-slate-700 leading-tight">{item.name}</p>
+    <tr className="group transition hover:bg-slate-50">
+      <td className="px-2 py-2 text-center align-top sm:px-3">{quantityCell}</td>
+      <td className="min-w-0 px-2 py-2 sm:px-3">
+        <p className="text-xs font-semibold leading-tight text-slate-700">{item.name}</p>
         {detailCell}
       </td>
-      <td className="px-3 py-2 text-center text-xs font-bold text-orange-500 tabular-nums align-top">{kcal}</td>
-      <td className="px-3 py-2 text-center text-xs font-bold text-teal-500 tabular-nums align-top">{cho}g</td>
-      <td className="px-3 py-2 text-center text-xs font-bold text-indigo-500 tabular-nums align-top">{pro}g</td>
-      <td className="px-3 py-2 text-center text-xs font-bold text-amber-500 tabular-nums align-top">{gra}g</td>
-      <td className="px-3 py-2 align-top">
+      <td className="px-2 py-2 text-center align-top text-xs font-bold tabular-nums text-orange-500 sm:px-3">{kcal}</td>
+      {/* En celular se ocultan macros para no empujar el botón quitar fuera de pantalla. */}
+      <td className="hidden px-3 py-2 text-center align-top text-xs font-bold tabular-nums text-teal-500 md:table-cell">{cho}g</td>
+      <td className="hidden px-3 py-2 text-center align-top text-xs font-bold tabular-nums text-indigo-500 md:table-cell">{pro}g</td>
+      <td className="hidden px-3 py-2 text-center align-top text-xs font-bold tabular-nums text-amber-500 md:table-cell">{gra}g</td>
+      <td className="px-2 py-2 align-top sm:px-3">
         <button
+          type="button"
           onClick={onRemove}
           aria-label={`Quitar ${item.name}`}
-          className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition"
+          className="text-slate-400 transition hover:text-red-400 md:opacity-0 md:group-hover:opacity-100"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="h-3.5 w-3.5" />
         </button>
       </td>
     </tr>

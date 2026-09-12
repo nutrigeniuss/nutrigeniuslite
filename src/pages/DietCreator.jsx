@@ -606,12 +606,21 @@ export default function DietCreator() {
     onAutosave: () => persistPlan("autosave"),
   });
 
-  // Volver a la ficha del paciente. Guarda antes de salir: el plan se
-  // autoguarda al abandonar la pantalla, y navegar con el router no dispara el
-  // `beforeunload` del navegador, así que hay que forzar el volcado a mano.
+  // Volver a la ficha. Guarda antes de salir (el router no dispara
+  // beforeunload) y deja marcada la pestaña Dieta→Alimentos para que al
+  // remontar ConsultDetail no caiga en la primera pestaña antropométrica.
   const handleBackToPatient = () => {
+    try {
+      sessionStorage.setItem("ng_lite_ficha_tab", "alimentos");
+    } catch {
+      /* private mode / quota — el navigate sigue igual */
+    }
     void flushAutosave();
-    navigate('/app');
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/app");
+    }
   };
 
   useEffect(() => {

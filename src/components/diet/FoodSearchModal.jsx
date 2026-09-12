@@ -95,7 +95,7 @@ export default function FoodSearchModal({ open, onClose, title = "Agregar alimen
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col bg-[#f7f8fc]/70">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f7f8fc]/70 px-4 py-3 sm:px-6">
           {children}
         </div>
 

@@ -211,7 +211,10 @@ export default function Recall24hEditor({
 
       <div className={twoCol ? "xl:grid xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start xl:gap-5" : ""}>
         {activeMeal ? (
-          <div className="mb-4 overflow-hidden rounded-[12px] border border-slate-200">
+          // Sin overflow-hidden en el card: en celular recortaba el botón + del
+          // buscador (mismas columnas anchas que en Dieta). El scroll horizontal
+          // queda solo en la tabla de ítems ya agregados.
+          <div className="mb-4 rounded-[12px] border border-slate-200">
             <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50/80 px-4 py-2.5">
               <span className="h-2 w-2 flex-shrink-0 rounded-full bg-brand-500" />
               <input
@@ -225,7 +228,7 @@ export default function Recall24hEditor({
                 }
               />
               <input
-                className="flex-1 border-b border-transparent bg-transparent text-sm font-medium text-slate-700 outline-none focus:border-brand-500"
+                className="min-w-0 flex-1 border-b border-transparent bg-transparent text-sm font-medium text-slate-700 outline-none focus:border-brand-500"
                 value={activeMeal.name}
                 onChange={(e) =>
                   setMeals((ms) =>
@@ -245,17 +248,17 @@ export default function Recall24hEditor({
             </div>
 
             {activeMeal.items.length > 0 ? (
-              <div className="border-b border-slate-100">
+              <div className="overflow-x-auto border-b border-slate-100">
                 <table className="w-full border-collapse text-left">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      <th className="w-20 px-3 py-2 text-center">Cant.</th>
-                      <th className="px-3 py-2">Alimento</th>
-                      <th className="px-3 py-2 text-center">Kcal</th>
-                      <th className="px-3 py-2 text-center">CHO</th>
-                      <th className="px-3 py-2 text-center">PRO</th>
-                      <th className="px-3 py-2 text-center">GRA</th>
-                      <th className="w-8 px-3 py-2" />
+                      <th className="w-16 px-2 py-2 text-center sm:w-20 sm:px-3">Cant.</th>
+                      <th className="px-2 py-2 sm:px-3">Alimento</th>
+                      <th className="px-2 py-2 text-center sm:px-3">Kcal</th>
+                      <th className="hidden px-3 py-2 text-center md:table-cell">CHO</th>
+                      <th className="hidden px-3 py-2 text-center md:table-cell">PRO</th>
+                      <th className="hidden px-3 py-2 text-center md:table-cell">GRA</th>
+                      <th className="w-10 px-2 py-2 sm:w-8 sm:px-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -272,7 +275,7 @@ export default function Recall24hEditor({
               </div>
             ) : null}
 
-            <div className="p-4">
+            <div className="min-w-0 p-3 sm:p-4">
               <RecallFoodSearch onAdd={handleAddItem} />
             </div>
           </div>

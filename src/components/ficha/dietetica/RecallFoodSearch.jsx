@@ -178,7 +178,7 @@ export default function RecallFoodSearch({ onAdd }) {
   return (
     <div className="flex flex-col">
       {/* Tabs estilo "segmented" con contador como pill — mismo formato que DietCreator. */}
-      <div className="flex items-center gap-1 border-b border-slate-200 mb-3">
+      <div className="mb-3 flex items-center gap-1 overflow-x-auto border-b border-slate-200 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => {
           const isActive = tab === t.key;
           return (
@@ -186,7 +186,7 @@ export default function RecallFoodSearch({ onAdd }) {
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`relative pb-3 pt-1 px-3 text-sm font-semibold flex items-center gap-1.5 transition ${
+              className={`relative flex shrink-0 items-center gap-1.5 px-3 pb-3 pt-1 text-sm font-semibold transition ${
                 isActive ? "text-brand-500" : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -210,10 +210,11 @@ export default function RecallFoodSearch({ onAdd }) {
           <button
             type="button"
             onClick={() => setShowCreateFood(true)}
-            className="ml-auto mb-2 inline-flex items-center gap-1 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-600"
+            className="mb-2 ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-600"
           >
             <Plus className="h-3.5 w-3.5" />
-            Crear alimento
+            <span className="sm:hidden">Crear</span>
+            <span className="hidden sm:inline">Crear alimento</span>
           </button>
         ) : null}
       </div>
@@ -256,171 +257,180 @@ export default function RecallFoodSearch({ onAdd }) {
         </div>
       </div>
 
-      {/* Resultados: misma tabla que el creador de dietas (sin columna Unidad,
-          dropdown bajo el nombre con gramos equivalentes editables, etc.). */}
+      {/* Resultados: misma tabla que el creador de dietas. En celular se
+          ocultan CHO/PRO/FAT (compactOnMobile) para que el botón + no se
+          salga de la pantalla — era el bug reportado en móvil. */}
       {currentSearch.trim() && (
-        <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-          <table className="w-full text-left border-collapse">
-            <FoodResultsTableHead quantityLabel="Cant." />
-            <tbody className="divide-y divide-slate-100">
-              {/* ALIMENTOS */}
-              {tab === "alimentos" && (
-                loading ? (
-                  <tr><td colSpan={7} className="p-8 text-center text-slate-400 text-sm">Cargando...</td></tr>
-                ) : filteredFoods.length === 0 ? (
-                  <tr><td colSpan={7} className="p-10 text-center text-slate-300 text-sm">{foods.length === 0 ? "Sin alimentos en el catálogo" : "Sin resultados para tu búsqueda"}</td></tr>
-                ) : filteredFoods.map(food => {
-                  const st = getState(food.id);
-                  const units = getUnits(food);
-                  const scaled = scaleFood(food);
-                  const currentUnit = units[st.unitIndex] || units[0];
-                  const isAdded = added[food.id];
-                  // Gramos equivalentes cuando la unidad seleccionada es casera.
-                  const equivalentGrams = currentUnit?.isHousehold
-                    ? roundNutritionValue((Number(st.quantity) || 0) * currentUnit.grams)
-                    : null;
-                  return (
-                    <tr key={food.id} className="hover:bg-slate-50/80 transition group">
-                      <td className="p-3 text-center">
-                        <DeferredNumberInput
-                          min={0}
-                          step={currentUnit.isHousehold ? 0.5 : 10}
-                          value={st.quantity}
-                          displayPrecision={2}
-                          onCommit={(v) => setItemState(s => ({ ...s, [food.id]: { ...getState(food.id), quantity: v } }))}
-                          className="w-16 rounded-lg border border-slate-200 bg-white p-1.5 text-center text-sm font-bold text-slate-700 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 hover:border-slate-300"
-                        />
-                      </td>
-                      <td className="p-3">
-                        <p className="font-semibold text-slate-800 text-sm leading-tight">{highlightMatch(food.name, foodSearch)}</p>
-                        {/* Unidad + gramos equivalentes editables (mismo patrón que DietCreator) */}
-                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                          {units.length > 1 ? (
-                            <UnitSelect
-                              options={units}
-                              value={st.unitIndex}
-                              onChange={(nextUnitIndex) => {
-                                const nextUnit = units[nextUnitIndex] || units[0];
-                                setItemState(s => ({
-                                  ...s,
-                                  [food.id]: {
-                                    ...getState(food.id),
-                                    unitIndex: nextUnitIndex,
-                                    quantity: getDefaultQuantityForUnit(nextUnit),
-                                  },
-                                }));
-                              }}
-                              ariaLabel={`Unidad de ${food.name}`}
-                            />
-                          ) : null}
-                          <EquivalentGramsField
-                            grams={equivalentGrams}
-                            unitGrams={currentUnit?.grams}
-                            onQuantityChange={(nextQuantity) =>
-                              setItemState(s => ({
-                                ...s,
-                                [food.id]: { ...getState(food.id), quantity: nextQuantity },
-                              }))
-                            }
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <FoodResultsTableHead quantityLabel="Cant." compactOnMobile />
+              <tbody className="divide-y divide-slate-100">
+                {/* ALIMENTOS */}
+                {tab === "alimentos" && (
+                  loading ? (
+                    <tr><td colSpan={7} className="p-8 text-center text-sm text-slate-400">Cargando...</td></tr>
+                  ) : filteredFoods.length === 0 ? (
+                    <tr><td colSpan={7} className="p-10 text-center text-sm text-slate-300">{foods.length === 0 ? "Sin alimentos en el catálogo" : "Sin resultados para tu búsqueda"}</td></tr>
+                  ) : filteredFoods.map(food => {
+                    const st = getState(food.id);
+                    const units = getUnits(food);
+                    const scaled = scaleFood(food);
+                    const currentUnit = units[st.unitIndex] || units[0];
+                    const isAdded = added[food.id];
+                    // Gramos equivalentes cuando la unidad seleccionada es casera.
+                    const equivalentGrams = currentUnit?.isHousehold
+                      ? roundNutritionValue((Number(st.quantity) || 0) * currentUnit.grams)
+                      : null;
+                    return (
+                      <tr key={food.id} className="group transition hover:bg-slate-50/80">
+                        <td className="p-2 text-center sm:p-3">
+                          <DeferredNumberInput
+                            min={0}
+                            step={currentUnit.isHousehold ? 0.5 : 10}
+                            value={st.quantity}
+                            displayPrecision={2}
+                            onCommit={(v) => setItemState(s => ({ ...s, [food.id]: { ...getState(food.id), quantity: v } }))}
+                            className="w-14 rounded-lg border border-slate-200 bg-white p-1.5 text-center text-sm font-bold text-slate-700 outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 sm:w-16"
                           />
-                        </div>
-                      </td>
-                      <td className="p-3 text-center text-sm font-bold text-slate-800 tabular-nums">{scaled.calories}</td>
-                      <MacroValueCell macro="carbs" value={scaled.carbs} />
-                      <MacroValueCell macro="protein" value={scaled.protein} />
-                      <MacroValueCell macro="fat" value={scaled.fat} />
-                      <td className="p-3 text-right">
-                        <button onClick={() => handleAddFood(food)}
-                          aria-label="Añadir alimento"
-                          className={`inline-flex w-8 h-8 items-center justify-center rounded-full font-bold text-sm shadow-sm transition transform hover:scale-105 ${isAdded ? "bg-emerald-500 text-white" : "bg-gradient-to-br from-brand-500 to-[#6c63ff] text-white hover:from-brand-600 hover:to-[#5b53f0]"}`}>
-                          {isAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-
-              {/* USDA */}
-              {tab === "usda" && (
-                offLoading ? (
-                  <tr><td colSpan={7} className="p-8 text-center"><div className="flex items-center justify-center gap-2 text-slate-400 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Buscando en USDA...</div></td></tr>
-                ) : !offSearched ? (
-                  <tr><td colSpan={7} className="p-10 text-center text-slate-300 text-sm">Escribe para buscar en la base USDA</td></tr>
-                ) : offResults.length === 0 ? (
-                  <tr><td colSpan={7} className="p-10 text-center text-slate-300 text-sm">Sin resultados</td></tr>
-                ) : offResults.map(food => {
-                  const parsed = parseUSDAFood(food);
-                  const stateKey = `usda_${food.fdcId}`;
-                  const units = getUsdaUnits(food);
-                  const defaultQty = units.length > 1 ? 1 : 100;
-                  const st = itemState[stateKey] || { quantity: defaultQty, unitIndex: units.length > 1 ? 1 : 0 };
-                  const unit = units[st.unitIndex] || units[0];
-                  const totalGrams = unit.isHousehold ? st.quantity * unit.grams : st.quantity;
-                  const factor = totalGrams / 100;
-                  const isAdded = added[stateKey];
-                  return (
-                    <tr key={food.fdcId} className="hover:bg-slate-50/80 transition">
-                      <td className="p-3 text-center">
-                        <DeferredNumberInput
-                          min={0}
-                          step={unit.isHousehold ? 0.5 : 10}
-                          value={st.quantity}
-                          displayPrecision={2}
-                          onCommit={(v) => setItemState(s => ({ ...s, [stateKey]: { ...st, quantity: v } }))}
-                          className="w-16 rounded-lg border border-slate-200 bg-white p-1.5 text-center text-sm font-bold text-slate-700 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 hover:border-slate-300"
-                        />
-                      </td>
-                      <td className="p-3">
-                        <p className="font-semibold text-slate-800 text-sm leading-tight">{highlightMatch(food.description, usdaSearch)}</p>
-                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                          {units.length > 1 ? (
-                            <UnitSelect
-                              options={units}
-                              value={st.unitIndex}
-                              onChange={(nextUnitIndex) => {
-                                const nextUnit = units[nextUnitIndex] || units[0];
+                        </td>
+                        <td className="p-2 sm:p-3">
+                          <p className="text-sm font-semibold leading-tight text-slate-800">{highlightMatch(food.name, foodSearch)}</p>
+                          {/* Unidad + gramos equivalentes editables (mismo patrón que DietCreator) */}
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                            {units.length > 1 ? (
+                              <UnitSelect
+                                options={units}
+                                value={st.unitIndex}
+                                onChange={(nextUnitIndex) => {
+                                  const nextUnit = units[nextUnitIndex] || units[0];
+                                  setItemState(s => ({
+                                    ...s,
+                                    [food.id]: {
+                                      ...getState(food.id),
+                                      unitIndex: nextUnitIndex,
+                                      quantity: getDefaultQuantityForUnit(nextUnit),
+                                    },
+                                  }));
+                                }}
+                                ariaLabel={`Unidad de ${food.name}`}
+                              />
+                            ) : null}
+                            <EquivalentGramsField
+                              grams={equivalentGrams}
+                              unitGrams={currentUnit?.grams}
+                              onQuantityChange={(nextQuantity) =>
                                 setItemState(s => ({
                                   ...s,
-                                  [stateKey]: { ...st, unitIndex: nextUnitIndex, quantity: getDefaultQuantityForUnit(nextUnit) },
-                                }));
-                              }}
-                              ariaLabel={`Unidad de ${food.description}`}
+                                  [food.id]: { ...getState(food.id), quantity: nextQuantity },
+                                }))
+                              }
                             />
-                          ) : (
-                            <span className="text-[11px] text-slate-400">{food.brandOwner || food.dataType || "USDA"}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3 text-center text-sm font-bold text-slate-800 tabular-nums">{Math.round(parsed.calories * factor)}</td>
-                      <MacroValueCell macro="carbs" value={parsed.carbs * factor} />
-                      <MacroValueCell macro="protein" value={parsed.protein * factor} />
-                      <MacroValueCell macro="fat" value={parsed.fat * factor} />
-                      <td className="p-3 text-right">
-                        <button onClick={() => {
-                          const unitLabel = unit.isHousehold ? `${st.quantity} ${unit.label} (${Math.round(totalGrams)}g)` : `${st.quantity}g`;
-                          onAdd({ name: food.description, quantity: 1, unit: unitLabel,
-                            calories: Math.round(parsed.calories * factor * 10) / 10,
-                            protein: Math.round(parsed.protein * factor * 10) / 10,
-                            carbs: Math.round(parsed.carbs * factor * 10) / 10,
-                            fat: Math.round(parsed.fat * factor * 10) / 10,
-                            fiber: Math.round(parsed.fiber * factor * 10) / 10,
-                            sodium: Math.round(parsed.sodium * factor * 10) / 10,
-                          });
-                          setAdded(a => ({ ...a, [stateKey]: true }));
-                          setTimeout(() => setAdded(a => { const c = { ...a }; delete c[stateKey]; return c; }), 1500);
-                        }}
-                          aria-label="Añadir alimento USDA"
-                          className={`inline-flex w-8 h-8 items-center justify-center rounded-full font-bold text-sm shadow-sm transition transform hover:scale-105 ${isAdded ? "bg-emerald-500 text-white" : "bg-gradient-to-br from-brand-500 to-[#6c63ff] text-white hover:from-brand-600 hover:to-[#5b53f0]"}`}>
-                          {isAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                          </div>
+                        </td>
+                        <td className="p-2 text-center text-sm font-bold tabular-nums text-slate-800 sm:p-3">{scaled.calories}</td>
+                        <MacroValueCell macro="carbs" value={scaled.carbs} hideOnMobile />
+                        <MacroValueCell macro="protein" value={scaled.protein} hideOnMobile />
+                        <MacroValueCell macro="fat" value={scaled.fat} hideOnMobile />
+                        <td className="sticky right-0 bg-white/95 p-2 text-right backdrop-blur-[2px] sm:static sm:bg-transparent sm:p-3 sm:backdrop-blur-none">
+                          <button
+                            type="button"
+                            onClick={() => handleAddFood(food)}
+                            aria-label="Añadir alimento"
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-sm transition hover:scale-105 ${isAdded ? "bg-emerald-500 text-white" : "bg-gradient-to-br from-brand-500 to-[#6c63ff] text-white hover:from-brand-600 hover:to-[#5b53f0]"}`}
+                          >
+                            {isAdded ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+
+                {/* USDA */}
+                {tab === "usda" && (
+                  offLoading ? (
+                    <tr><td colSpan={7} className="p-8 text-center"><div className="flex items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /> Buscando en USDA...</div></td></tr>
+                  ) : !offSearched ? (
+                    <tr><td colSpan={7} className="p-10 text-center text-sm text-slate-300">Escribe para buscar en la base USDA</td></tr>
+                  ) : offResults.length === 0 ? (
+                    <tr><td colSpan={7} className="p-10 text-center text-sm text-slate-300">Sin resultados</td></tr>
+                  ) : offResults.map(food => {
+                    const parsed = parseUSDAFood(food);
+                    const stateKey = `usda_${food.fdcId}`;
+                    const units = getUsdaUnits(food);
+                    const defaultQty = units.length > 1 ? 1 : 100;
+                    const st = itemState[stateKey] || { quantity: defaultQty, unitIndex: units.length > 1 ? 1 : 0 };
+                    const unit = units[st.unitIndex] || units[0];
+                    const totalGrams = unit.isHousehold ? st.quantity * unit.grams : st.quantity;
+                    const factor = totalGrams / 100;
+                    const isAdded = added[stateKey];
+                    return (
+                      <tr key={food.fdcId} className="transition hover:bg-slate-50/80">
+                        <td className="p-2 text-center sm:p-3">
+                          <DeferredNumberInput
+                            min={0}
+                            step={unit.isHousehold ? 0.5 : 10}
+                            value={st.quantity}
+                            displayPrecision={2}
+                            onCommit={(v) => setItemState(s => ({ ...s, [stateKey]: { ...st, quantity: v } }))}
+                            className="w-14 rounded-lg border border-slate-200 bg-white p-1.5 text-center text-sm font-bold text-slate-700 outline-none transition hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 sm:w-16"
+                          />
+                        </td>
+                        <td className="p-2 sm:p-3">
+                          <p className="text-sm font-semibold leading-tight text-slate-800">{highlightMatch(food.description, usdaSearch)}</p>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                            {units.length > 1 ? (
+                              <UnitSelect
+                                options={units}
+                                value={st.unitIndex}
+                                onChange={(nextUnitIndex) => {
+                                  const nextUnit = units[nextUnitIndex] || units[0];
+                                  setItemState(s => ({
+                                    ...s,
+                                    [stateKey]: { ...st, unitIndex: nextUnitIndex, quantity: getDefaultQuantityForUnit(nextUnit) },
+                                  }));
+                                }}
+                                ariaLabel={`Unidad de ${food.description}`}
+                              />
+                            ) : (
+                              <span className="text-[11px] text-slate-400">{food.brandOwner || food.dataType || "USDA"}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-2 text-center text-sm font-bold tabular-nums text-slate-800 sm:p-3">{Math.round(parsed.calories * factor)}</td>
+                        <MacroValueCell macro="carbs" value={parsed.carbs * factor} hideOnMobile />
+                        <MacroValueCell macro="protein" value={parsed.protein * factor} hideOnMobile />
+                        <MacroValueCell macro="fat" value={parsed.fat * factor} hideOnMobile />
+                        <td className="sticky right-0 bg-white/95 p-2 text-right backdrop-blur-[2px] sm:static sm:bg-transparent sm:p-3 sm:backdrop-blur-none">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const unitLabel = unit.isHousehold ? `${st.quantity} ${unit.label} (${Math.round(totalGrams)}g)` : `${st.quantity}g`;
+                              onAdd({ name: food.description, quantity: 1, unit: unitLabel,
+                                calories: Math.round(parsed.calories * factor * 10) / 10,
+                                protein: Math.round(parsed.protein * factor * 10) / 10,
+                                carbs: Math.round(parsed.carbs * factor * 10) / 10,
+                                fat: Math.round(parsed.fat * factor * 10) / 10,
+                                fiber: Math.round(parsed.fiber * factor * 10) / 10,
+                                sodium: Math.round(parsed.sodium * factor * 10) / 10,
+                              });
+                              setAdded(a => ({ ...a, [stateKey]: true }));
+                              setTimeout(() => setAdded(a => { const c = { ...a }; delete c[stateKey]; return c; }), 1500);
+                            }}
+                            aria-label="Añadir alimento USDA"
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-sm transition hover:scale-105 ${isAdded ? "bg-emerald-500 text-white" : "bg-gradient-to-br from-brand-500 to-[#6c63ff] text-white hover:from-brand-600 hover:to-[#5b53f0]"}`}
+                          >
+                            {isAdded ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

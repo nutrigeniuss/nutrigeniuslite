@@ -54,7 +54,21 @@ export default function ConsultDetail({
       ? measurements[consultIndex].recall_24h
       : DEFAULT_MEALS,
   );
-  const [tabIdx, setTabIdx] = useState(0);
+  // Al volver desde DietCreator/ExchangeDietCreator se guarda la pestaña en
+  // sessionStorage para no aterrizar otra vez en antropometría.
+  const [tabIdx, setTabIdx] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("ng_lite_ficha_tab");
+      if (saved) {
+        sessionStorage.removeItem("ng_lite_ficha_tab");
+        const idx = TAB_KEYS.indexOf(saved);
+        if (idx >= 0) return idx;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 0;
+  });
   const [campoResaltado, setCampoResaltado] = useState(null);
   const temporizadorResaltado = useRef(null);
 

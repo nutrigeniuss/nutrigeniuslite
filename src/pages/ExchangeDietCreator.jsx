@@ -720,8 +720,17 @@ export default function ExchangeDietCreator() {
   };
 
   const handleBackToPatient = async () => {
+    try {
+      sessionStorage.setItem("ng_lite_ficha_tab", "intercambios");
+    } catch {
+      /* ignore */
+    }
     void flushAutosave();
-    navigate('/app');
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/app");
+    }
   };
 
   return (
