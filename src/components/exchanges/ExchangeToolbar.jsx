@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Printer, SlidersHorizontal, MoreHorizontal, ChevronDown } from "lucide-react";
+import { Printer, SlidersHorizontal, MoreHorizontal, ChevronDown, MessageCircle } from "lucide-react";
 import BackLink from "@/components/ui/back-link";
 
-function MobileActionsMenu({ patientId, patientRecord, onShowMacroEditor, onPrint }) {
+function MobileActionsMenu({
+  patientId,
+  patientRecord,
+  onShowMacroEditor,
+  onPrint,
+  onWhatsApp,
+  whatsAppBusy,
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -45,6 +52,27 @@ function MobileActionsMenu({ patientId, patientRecord, onShowMacroEditor, onPrin
           role="menu"
           className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.35)]"
         >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => run(onPrint)}
+            className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <Printer className="h-4 w-4 text-slate-500" />
+            PDF / Imprimir
+          </button>
+          {onWhatsApp ? (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={whatsAppBusy}
+              onClick={() => run(onWhatsApp)}
+              className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <MessageCircle className="h-4 w-4 text-emerald-600" />
+              {whatsAppBusy ? "Generando…" : "WhatsApp"}
+            </button>
+          ) : null}
           {patientId ? (
             <button
               type="button"
@@ -57,29 +85,12 @@ function MobileActionsMenu({ patientId, patientRecord, onShowMacroEditor, onPrin
               Macronutrientes
             </button>
           ) : null}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => run(onPrint)}
-            className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            <Printer className="h-4 w-4 text-slate-500" />
-            Imprimir
-          </button>
         </div>
       ) : null}
     </div>
   );
 }
 
-// Barra superior del editor por intercambios: volver, resumen, fecha,
-// conmutador de pestañas (tabla / alimentos) y acciones (macros, imprimir).
-// Extraído de ExchangeDietCreator.jsx.
-//
-// NO lleva botón ni indicador de guardado: el plan se autoguarda al salir de
-// la pantalla, al ocultar la pestaña y cada cierto rato, así que no hay nada
-// que el nutricionista tenga que pulsar ni vigilar. Por eso ya no recibe
-// `onSave`, `saving`, `saved` ni `hasUnsavedChanges`.
 export default function ExchangeToolbar({
   isMobile,
   patientId,
@@ -91,6 +102,8 @@ export default function ExchangeToolbar({
   onBack,
   onShowMacroEditor,
   onPrint,
+  onWhatsApp,
+  whatsAppBusy = false,
   onShowMobileSummary,
 }) {
   return (
@@ -129,10 +142,11 @@ export default function ExchangeToolbar({
             patientRecord={patientRecord}
             onShowMacroEditor={onShowMacroEditor}
             onPrint={onPrint}
+            onWhatsApp={onWhatsApp}
+            whatsAppBusy={whatsAppBusy}
           />
         </div>
 
-        {/* En estrecho las pestañas bajan a una fila propia. */}
         <div className="order-last flex w-full min-w-0 justify-center overflow-x-auto sm:order-none sm:w-auto sm:flex-1">
           <div className="inline-flex min-w-max items-center gap-1 rounded-full border border-[#e5e3ff] bg-[#f7f6ff] p-1 shadow-sm shadow-slate-200/20">
             {[
@@ -152,7 +166,6 @@ export default function ExchangeToolbar({
           </div>
         </div>
 
-        {/* Desktop actions */}
         <div className="mx-auto hidden w-full flex-wrap items-center justify-center gap-2 sm:mx-0 sm:flex sm:w-auto">
           {patientId ? (
             <button
@@ -173,6 +186,18 @@ export default function ExchangeToolbar({
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir
           </button>
+
+          {onWhatsApp ? (
+            <button
+              type="button"
+              onClick={onWhatsApp}
+              disabled={whatsAppBusy}
+              className="flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 sm:h-[29px] sm:min-h-0"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              {whatsAppBusy ? "…" : "WhatsApp"}
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

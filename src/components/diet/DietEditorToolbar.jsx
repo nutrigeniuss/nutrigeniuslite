@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Printer, ShieldAlert, SlidersHorizontal, Bot, Pencil, ChevronDown, MoreHorizontal } from "lucide-react";
+import { Printer, ShieldAlert, SlidersHorizontal, Bot, Pencil, ChevronDown, MoreHorizontal, MessageCircle } from "lucide-react";
 import BackLink from "@/components/ui/back-link";
 
-// Pill + popover con las restricciones dietéticas derivadas del expediente
-// (diagnósticos + intolerancias). Solo se muestra si hay alguna. Sirve de
-// recordatorio pasivo mientras se arma el plan; el asistente IA ya las respeta.
 function RestrictionsPill({ restrictions }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -62,7 +59,7 @@ function RestrictionsPill({ restrictions }) {
   );
 }
 
-/** Menú colapsable de acciones para celular: Imprimir/Guardar/Macros no cabían en la barra. */
+/** Menú móvil: PDF + WhatsApp (+ macros / asistente si aplican). */
 function MobileActionsMenu({
   patientId,
   readOnly,
@@ -70,6 +67,8 @@ function MobileActionsMenu({
   macroEditorDisabled,
   onShowMacroEditor,
   onPrint,
+  onWhatsApp,
+  whatsAppBusy,
   onOpenAssistant,
 }) {
   const [open, setOpen] = useState(false);
@@ -83,7 +82,6 @@ function MobileActionsMenu({
     const onKey = (event) => {
       if (event.key === "Escape") setOpen(false);
     };
-    // pointerdown cubre dedo + mouse; mousedown solo no cierra bien en touch.
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -123,8 +121,21 @@ function MobileActionsMenu({
             className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             <Printer className="h-4 w-4 text-slate-500" />
-            Imprimir
+            PDF / Imprimir
           </button>
+
+          {onWhatsApp ? (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={whatsAppBusy}
+              onClick={() => run(onWhatsApp)}
+              className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <MessageCircle className="h-4 w-4 text-emerald-600" />
+              {whatsAppBusy ? "Generando…" : "WhatsApp"}
+            </button>
+          ) : null}
 
           {patientId && !readOnly ? (
             <button
@@ -172,10 +183,6 @@ function MobileActionsMenu({
   );
 }
 
-// ── Diet Editor Toolbar ──────────────────────────────────────────────────────
-// Barra superior del editor de dietas: volver, botón "Resumen" (mobile),
-// título editable y acciones (editar macros, imprimir). El plan se autoguarda;
-// no hay botón "Guardar dieta" (catálogo) en Lite.
 export default function DietEditorToolbar({
   isMobile,
   patientId,
@@ -189,15 +196,13 @@ export default function DietEditorToolbar({
   macroEditorDisabled,
   restrictions = [],
   onPrint,
+  onWhatsApp,
+  whatsAppBusy = false,
   onOpenAssistant,
-  // En modo inspección (titular Pro+ viendo a un trabajador) el editor es de
-  // solo lectura: se ocultan las acciones de edición y se dejan las de ver.
   readOnly = false,
 }) {
   return (
     <header className="relative z-20 flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-slate-200/80 bg-white/90 px-3 py-2.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,0.25)] backdrop-blur-md sm:px-6">
-      {/* Volver: z-index y touch-manipulation para que el dedo no “falle” en
-          celulares con barra apretada. En móvil el texto es más corto. */}
       <BackLink
         onClick={onBack}
         label={isMobile ? "Volver" : "Volver a la ficha"}
@@ -205,7 +210,6 @@ export default function DietEditorToolbar({
         compact
       />
 
-      {/* Botón de resumen (solo mobile). */}
       {isMobile ? (
         <button
           type="button"
@@ -216,9 +220,6 @@ export default function DietEditorToolbar({
         </button>
       ) : null}
 
-      {/* Nombre del plan — editable. Se resalta como campo editable (lápiz +
-          fondo al pasar el cursor + anillo al enfocar) para que quede claro que
-          se puede escribir o cambiar el texto, no es un simple rótulo. */}
       <label
         title="Haz clic para escribir o editar el nombre del plan"
         className="group flex min-w-0 max-w-[min(100%,14rem)] flex-1 cursor-text items-center gap-1.5 rounded-lg border border-transparent px-2 py-1 transition hover:border-slate-200 hover:bg-slate-50 focus-within:border-brand-500/40 focus-within:bg-white focus-within:ring-1 focus-within:ring-brand-500/20 sm:max-w-[60%] sm:flex-none"
@@ -236,13 +237,8 @@ export default function DietEditorToolbar({
         <Pencil className="h-3.5 w-3.5 flex-shrink-0 text-slate-400 opacity-70 transition group-hover:text-brand-500 group-hover:opacity-100 group-focus-within:text-brand-500" aria-hidden="true" />
       </label>
 
-      {/* Espaciador: empuja fecha + acciones a la derecha ahora que el título
-          se ajusta a su contenido en vez de ocupar todo el ancho (flex-1). */}
       <div className="hidden min-w-[8px] flex-1 sm:block" aria-hidden="true" />
 
-      {/* Fecha del plan: mismo control que la dieta por intercambios. El input
-          nativo `type="date"` muestra la fecha seleccionada y su icono de
-          calendario abre el selector moderno del navegador para editarla. */}
       {onDateChange ? (
         <label className="flex h-11 flex-shrink-0 touch-manipulation items-center gap-2 rounded-full border border-[#e5e3ff] bg-[#f7f6ff] px-3 shadow-sm shadow-slate-200/20 sm:h-[31px]">
           <span className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6860c7] sm:inline">Fecha</span>
@@ -256,7 +252,6 @@ export default function DietEditorToolbar({
         </label>
       ) : null}
 
-      {/* Celular: acciones colapsadas (Imprimir no cabía en la barra). */}
       <MobileActionsMenu
         patientId={patientId}
         readOnly={readOnly}
@@ -264,10 +259,11 @@ export default function DietEditorToolbar({
         macroEditorDisabled={macroEditorDisabled}
         onShowMacroEditor={onShowMacroEditor}
         onPrint={onPrint}
+        onWhatsApp={onWhatsApp}
+        whatsAppBusy={whatsAppBusy}
         onOpenAssistant={onOpenAssistant}
       />
 
-      {/* Desktop (sm+): botones de acción en línea. */}
       <div className="hidden flex-shrink-0 items-center gap-1.5 sm:flex">
         <RestrictionsPill restrictions={restrictions} />
         {patientId && !readOnly ? (
@@ -291,6 +287,18 @@ export default function DietEditorToolbar({
           <Printer className="h-4 w-4" />
           <span className="hidden lg:inline">Imprimir</span>
         </button>
+        {onWhatsApp ? (
+          <button
+            type="button"
+            onClick={onWhatsApp}
+            disabled={whatsAppBusy}
+            title="Enviar por WhatsApp"
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span className="hidden lg:inline">{whatsAppBusy ? "…" : "WhatsApp"}</span>
+          </button>
+        ) : null}
         {!readOnly && onOpenAssistant ? (
           <>
             <div className="mx-1 h-6 w-px bg-slate-200" aria-hidden="true" />

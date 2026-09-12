@@ -462,6 +462,40 @@ function RecipePage({ recipe }: RecipePageProps) {
   );
 }
 
+/** Solo el contenido imprimible (sin toolbar). Usado para generar PDF / WhatsApp. */
+export function DietPrintDocument({
+  title,
+  date,
+  patientName,
+  meals,
+  targetCalories,
+  recipes,
+  brandLogoUrl,
+  brandName,
+}: DayPrintProps & { recipes?: PrintRecipe[] }) {
+  const usedRecipes = extractUsedRecipes(meals, recipes || []);
+  return (
+    <div className="bg-white text-slate-900" style={{ width: '210mm', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div className="print-sheet px-8 py-6">
+        <DayPrint
+          title={title}
+          date={date}
+          patientName={patientName}
+          meals={meals}
+          targetCalories={targetCalories}
+          brandLogoUrl={brandLogoUrl}
+          brandName={brandName}
+        />
+      </div>
+      {usedRecipes.map((recipe) => (
+        <div key={recipe.id || recipe.name} className="print-sheet px-8 py-6">
+          <RecipePage recipe={recipe} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DietPrintView({ title, date, patientName, meals, targetCalories, recipes, onClose, brandLogoUrl, brandName }: DietPrintViewProps) {
   const handlePrint = (): void => {
     window.print();

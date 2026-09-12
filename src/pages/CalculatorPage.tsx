@@ -6,21 +6,23 @@ import { FichaProvider, useFicha } from '@/lib/FichaContext';
 import BrandLogo from '@/components/BrandLogo';
 import ConsultDetail from '@/components/ficha/ConsultDetail';
 import InstallAppButton from '@/components/InstallAppButton';
+import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 
 function FichaShell() {
   const { profile, signOut, admin } = useAuth();
   const { patient, updatePatient, resetFicha, fichaRevision } = useFicha();
   const [signingOut, setSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmNuevaFicha, setConfirmNuevaFicha] = useState(false);
 
-  const handleNuevaFicha = () => {
-    if (!window.confirm(
-      '¿Nueva ficha? Se limpia paciente, mediciones, bioquímica y dieta de esta sesión. No hay historial en la nube: Lite es una calculadora.',
-    )) {
-      return;
-    }
+  const requestNuevaFicha = () => {
+    setConfirmNuevaFicha(true);
+  };
+
+  const confirmNuevaFichaAction = () => {
     resetFicha();
     setMenuOpen(false);
+    setConfirmNuevaFicha(false);
   };
 
   const handleSalir = async () => {
@@ -47,7 +49,7 @@ function FichaShell() {
         {/* Desktop actions */}
         <div className="hidden flex-wrap items-center justify-end gap-2.5 sm:flex">
           <InstallAppButton />
-          <button type="button" onClick={handleNuevaFicha} className="ng-btn-ghost">
+          <button type="button" onClick={requestNuevaFicha} className="ng-btn-ghost">
             <Eraser className="h-3.5 w-3.5" /> Nueva ficha
           </button>
           <Link to="/MyFoods" className="ng-btn-ghost">
@@ -89,7 +91,7 @@ function FichaShell() {
         <div className="mb-3 space-y-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:hidden">
           <button
             type="button"
-            onClick={handleNuevaFicha}
+            onClick={requestNuevaFicha}
             className="flex min-h-11 w-full touch-manipulation items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             <Eraser className="h-4 w-4 text-slate-400" /> Nueva ficha
@@ -130,6 +132,17 @@ function FichaShell() {
         onBack={() => undefined}
         onUpdate={updatePatient}
         onPatientUpdate={updatePatient}
+      />
+
+      <ConfirmationDialog
+        open={confirmNuevaFicha}
+        onOpenChange={setConfirmNuevaFicha}
+        title="¿Empezar una ficha nueva?"
+        description="Se borrarán los datos del paciente actual en esta pantalla: medidas, bioquímica y dietas de la sesión. Esta acción no se puede deshacer."
+        confirmLabel="Sí, nueva ficha"
+        cancelLabel="Cancelar"
+        onConfirm={confirmNuevaFichaAction}
+        destructive
       />
     </div>
   );

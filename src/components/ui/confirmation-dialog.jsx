@@ -22,15 +22,25 @@ export default function ConfirmationDialog({
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+        <AlertDialogHeader className="text-left sm:text-left">
+          <AlertDialogTitle className="ng-display text-lg font-semibold tracking-tight text-slate-900">
+            {title}
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-sm leading-relaxed text-slate-500">
+            {description}
+          </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+        <AlertDialogFooter className="gap-2 sm:gap-2">
+          <AlertDialogCancel className="min-h-11 rounded-full border-slate-200">
+            {cancelLabel}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className={destructive ? 'bg-red-600 hover:bg-red-700 focus:ring-red-600' : ''}
+            className={
+              destructive
+                ? 'min-h-11 rounded-full bg-rose-500 hover:bg-rose-600 focus:ring-rose-500'
+                : 'min-h-11 rounded-full bg-brand-500 hover:bg-brand-600'
+            }
           >
             {confirmLabel}
           </AlertDialogAction>

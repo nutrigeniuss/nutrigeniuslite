@@ -28,6 +28,9 @@ import { toast } from "@/components/ui/use-toast";
 import { useAutosaveOnLeave } from "@/hooks/useAutosaveOnLeave";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { buildFoodPlanItem } from "@/lib/dietPlanItem";
+import { resolvePatientWhatsapp } from "@/lib/fichaWhatsapp";
+import { dietPlanToPdfFile } from "@/lib/dietPrintPdf";
+import { sendDietViaWhatsApp } from "@/lib/shareDietWhatsApp";
 import {
   DEFAULT_MEALS,
   DEFAULT_MEAL_IDS,
@@ -69,6 +72,7 @@ export default function DietCreator() {
   const urlParams      = new URLSearchParams(window.location.search);
   const patientId      = urlParams.get("patientId") || "";
   const patientNameUrl = urlParams.get("patientName") || "Paciente";
+  const patientWhatsapp = resolvePatientWhatsapp(urlParams.get("whatsapp"));
   const targetCalUrl   = parseInt(urlParams.get("targetCal")) || 2000;
   const initialDate    = urlParams.get("date") || todayLocalDateStr();
   const initialPlanId  = urlParams.get("planId") || "";
@@ -91,6 +95,7 @@ export default function DietCreator() {
   const [activeMealId, setActiveMealId]       = useState(DEFAULT_MEALS[0].id);
   const [saving, setSaving]                   = useState(false);
   const [showPrint, setShowPrint]             = useState(false);
+  const [whatsAppBusy, setWhatsAppBusy]       = useState(false);
   const [currentPlanId, setCurrentPlanId]       = useState(initialPlanId);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
   // Lite excludes clinical AI assistant — no showAssistant state.
@@ -148,6 +153,66 @@ export default function DietCreator() {
 
   const openPrintPreview = () => {
     setShowPrint(true);
+  };
+
+  const handleWhatsApp = async () => {
+    if (whatsAppBusy) return;
+    setWhatsAppBusy(true);
+    try {
+      let recipes = printRecipes;
+      if (recipes === null) {
+        try {
+          const result = await listRecipes(user?.id);
+          recipes = result?.data || [];
+          setPrintRecipes(recipes);
+        } catch {
+          recipes = [];
+          setPrintRecipes([]);
+        }
+      }
+
+      const result = await sendDietViaWhatsApp({
+        phoneRaw: patientWhatsapp,
+        patientName: resolvedPatientName || patientNameUrl,
+        planTitle: title,
+        getPdfFile: () => dietPlanToPdfFile({
+          title,
+          date,
+          patientName: resolvedPatientName || patientNameUrl,
+          meals,
+          targetCalories,
+          recipes,
+          brandLogoUrl: user?.brandLogoUrl,
+          brandName: user?.brandName,
+          filename: title || "plan-alimentario",
+        }),
+      });
+
+      if (!result.ok && result.reason === "missing-phone") {
+        toast({
+          title: "Falta el celular del paciente",
+          description: "Agrégalo en la ficha (WhatsApp / celular) y vuelve a intentar.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!result.ok) {
+        toast({
+          title: "No se pudo preparar WhatsApp",
+          description: result.message || "Intenta de nuevo.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (result.mode === "download+wa") {
+        toast({
+          title: "PDF listo",
+          description: "Se descargó el plan y se abrió el chat. Adjúntalo en WhatsApp.",
+        });
+      }
+    } finally {
+      setWhatsAppBusy(false);
+    }
   };
 
   // Calienta el catálogo de alimentos apenas se abre el editor (no al abrir el
@@ -711,6 +776,8 @@ export default function DietCreator() {
           macroEditorDisabled={!patientRecord}
           restrictions={dietaryRestrictions}
           onPrint={openPrintPreview}
+          onWhatsApp={() => void handleWhatsApp()}
+          whatsAppBusy={whatsAppBusy}
           readOnly={isInspecting}
         />
 

@@ -13,6 +13,7 @@ type PatientLike = {
   gender?: string | null;
   sex?: string | null;
   birth_date?: string | null;
+  whatsapp?: string | null;
 };
 
 type Props = {
@@ -192,6 +193,18 @@ export default function FichaContextBar({
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
               value={measurement.date || ''}
               onChange={(e) => onMeasurementChange({ date: e.target.value || null })}
+            />
+          </label>
+          <label className="text-[11px] font-semibold text-slate-500 sm:col-span-2 lg:col-span-1">
+            WhatsApp / celular
+            <input
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+              value={patient.whatsapp || ''}
+              onChange={(e) => onPatientChange({ whatsapp: e.target.value })}
+              placeholder="999 888 777"
             />
           </label>
         </div>

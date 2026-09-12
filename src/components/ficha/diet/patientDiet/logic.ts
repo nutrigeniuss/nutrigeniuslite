@@ -51,10 +51,14 @@ export const buildPatientParam = (patient: PatientDietRecord, patientName: strin
   // En calc la ficha es de sesión: no hay fila en `patients` de Supabase.
   const isSession = !patient.id || patient.id === 'session-ficha';
   const target = patient.target_calories || 2000;
+  const whatsappRaw = typeof patient.whatsapp === 'string' ? patient.whatsapp.trim() : '';
+  const whatsappQs = whatsappRaw
+    ? `&whatsapp=${encodeURIComponent(whatsappRaw)}`
+    : '';
   if (isSession) {
-    return `patientName=${encodeURIComponent(patientName)}&targetCal=${target}`;
+    return `patientName=${encodeURIComponent(patientName)}&targetCal=${target}${whatsappQs}`;
   }
-  return `patientId=${patient.id}&patientName=${encodeURIComponent(patientName)}&targetCal=${target}`;
+  return `patientId=${patient.id}&patientName=${encodeURIComponent(patientName)}&targetCal=${target}${whatsappQs}`;
 };
 
 export const hasMacroConfiguration = (patient: PatientDietRecord): boolean => {
