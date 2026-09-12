@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eraser, LogOut, Shield } from 'lucide-react';
+import { Eraser, LogOut, Menu, Shield, X } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { FichaProvider, useFicha } from '@/lib/FichaContext';
 import BrandLogo from '@/components/BrandLogo';
 import ConsultDetail from '@/components/ficha/ConsultDetail';
+import InstallAppButton from '@/components/InstallAppButton';
 
 function FichaShell() {
   const { profile, signOut, admin } = useAuth();
   const { patient, updatePatient, resetFicha, fichaRevision } = useFicha();
   const [signingOut, setSigningOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleNuevaFicha = () => {
     if (!window.confirm(
@@ -18,11 +20,13 @@ function FichaShell() {
       return;
     }
     resetFicha();
+    setMenuOpen(false);
   };
 
   const handleSalir = async () => {
     if (signingOut) return;
     setSigningOut(true);
+    setMenuOpen(false);
     try {
       await signOut();
     } finally {
@@ -32,14 +36,20 @@ function FichaShell() {
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
-      <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
+      <header className="mb-5 flex items-start justify-between gap-3 sm:mb-7 sm:items-center sm:gap-4">
         <div className="min-w-0">
           <BrandLogo alt="NutriGenius Lite" showLite />
-          <p className="ng-muted mt-1.5 pl-0.5">
+          <p className="ng-muted mt-1.5 hidden pl-0.5 sm:block">
             Calculadora de consulta · {profile?.full_name || profile?.email || 'sesión local'}
           </p>
+          <p className="mt-1 truncate pl-0.5 text-[11px] text-slate-400 sm:hidden">
+            {profile?.full_name || profile?.email || 'sesión'}
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
+
+        {/* Desktop actions */}
+        <div className="hidden flex-wrap items-center justify-end gap-2.5 sm:flex">
+          <InstallAppButton />
           <button type="button" onClick={handleNuevaFicha} className="ng-btn-ghost">
             <Eraser className="h-3.5 w-3.5" /> Nueva ficha
           </button>
@@ -62,7 +72,58 @@ function FichaShell() {
             {signingOut ? 'Saliendo…' : 'Salir'}
           </button>
         </div>
+
+        {/* Mobile: install + menu */}
+        <div className="flex shrink-0 items-center gap-1.5 sm:hidden">
+          <InstallAppButton />
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="ng-btn-ghost !px-2.5"
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          >
+            {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </div>
       </header>
+
+      {menuOpen ? (
+        <div className="mb-4 space-y-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:hidden">
+          <button
+            type="button"
+            onClick={handleNuevaFicha}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <Eraser className="h-4 w-4 text-slate-400" /> Nueva ficha
+          </button>
+          <Link
+            to="/MyFoods"
+            onClick={() => setMenuOpen(false)}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Alimentos
+          </Link>
+          {admin === true ? (
+            <Link
+              to="/admin"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <Shield className="h-4 w-4 text-slate-400" /> Maestro
+            </Link>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void handleSalir()}
+            disabled={signingOut}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            <LogOut className="h-4 w-4 text-slate-400" />
+            {signingOut ? 'Saliendo…' : 'Salir'}
+          </button>
+        </div>
+      ) : null}
 
       <ConsultDetail
         key={fichaRevision}

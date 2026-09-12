@@ -39,8 +39,8 @@ function formatDateLabel(iso: string | null | undefined): string {
 }
 
 /**
- * Cabecera de ficha compartida (Lite calculadora).
- * Visible en todas las pestañas; editable; misma fuente que Antro/Calorías/Dieta.
+ * Cabecera de ficha compartida.
+ * En móvil: resumen compacto colapsable; editar abre el formulario.
  */
 export default function FichaContextBar({
   patient,
@@ -49,6 +49,7 @@ export default function FichaContextBar({
   onMeasurementChange,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [chipsOpen, setChipsOpen] = useState(false);
   const sex = patient.gender || patient.sex || 'Femenino';
   const age = useMemo(
     () => formatAge(patient.birth_date, measurement.date),
@@ -75,12 +76,62 @@ export default function FichaContextBar({
     },
   ];
 
+  const mobileSummary = [
+    age,
+    sex === 'Masculino' ? 'M' : sex === 'Femenino' ? 'F' : sex,
+    measurement.weight != null ? `${measurement.weight} kg` : null,
+    measurement.height != null ? `${measurement.height} cm` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <div className="mb-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.04)]">
+      {/* Móvil: una línea + expandir chips */}
+      <div className="flex items-center gap-2 px-3 py-2.5 sm:hidden">
+        <button
+          type="button"
+          onClick={() => setChipsOpen((v) => !v)}
+          className="min-w-0 flex-1 text-left"
+          aria-expanded={chipsOpen}
+        >
+          <p className="truncate text-[12px] font-semibold tabular-nums text-slate-700">
+            {mobileSummary || 'Sin datos de contexto'}
+          </p>
+          <p className="text-[10px] font-medium text-slate-400">
+            {chipsOpen ? 'Ocultar detalle' : 'Ver edad · sexo · peso · talla'}
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="shrink-0 rounded-full bg-brand-50 px-2.5 py-1.5 text-[11px] font-semibold text-brand-600"
+          aria-expanded={open}
+        >
+          {open ? 'Cerrar' : 'Editar'}
+        </button>
+      </div>
+
+      {chipsOpen ? (
+        <div className="flex flex-wrap gap-1.5 border-t border-slate-100 px-3 py-2.5 sm:hidden">
+          {chips.map((chip) => (
+            <span
+              key={chip.label}
+              className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200/80"
+            >
+              <span className="text-brand-500">{chip.icon}</span>
+              <span className="text-slate-400">{chip.label}</span>
+              <span className="tabular-nums text-slate-800">{chip.value}</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Desktop / tablet: chips siempre visibles */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-3.5 py-3 text-left sm:px-4"
+        className="hidden w-full items-center gap-3 px-3.5 py-3 text-left sm:flex sm:px-4"
         aria-expanded={open}
       >
         <div className="flex min-w-0 flex-1 flex-wrap gap-2">
