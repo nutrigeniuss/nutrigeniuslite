@@ -3,14 +3,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
-import SaveToCatalogModal from '@/components/diet/SaveToCatalogModal';
 import {
   formatMonthTitle,
   parseLocalDate,
   todayLocalDateStr,
   toLocalDateStr,
 } from '@/lib/weekRange';
-import type { DietPlan, PatientDietRecord } from './patientDietTypes';
+import type { DietPlan } from './patientDietTypes';
 import { logger, errorMessage } from '@/lib/logger';
 import MonthGrid from './dietCalendar/MonthGrid';
 import DayPanel, { type CopyCandidate } from './dietCalendar/DayPanel';
@@ -19,36 +18,23 @@ import CopyDietDialog from './dietCalendar/CopyDietDialog';
 type PlansByDate = Record<string, DietPlan[]>;
 
 type DietCalendarViewProps = {
-  patient: PatientDietRecord;
   dietPlans: DietPlan[];
   onCreateFromScratch: (date: string) => void | Promise<void>;
-  onCreateFromCatalog?: (date: string) => void;
-  onSaveToCatalog?: (plan: DietPlan, name?: string) => void | Promise<void>;
   onCopyFromDate: (targetDate: string, sourcePlanId: string) => void | Promise<void>;
   patientParam: string;
   onDeletePlan?: (planId: string) => void | Promise<void>;
-  /**
-   * Avisa de qué día está elegido, en 'YYYY-MM-DD' (o null si ninguno).
-   * La impresión semanal usa la semana de ese día.
-   */
   onSelectedDateChange?: (dateStr: string | null) => void;
 };
 
-/** Suma meses conservando el día 1, para navegar el mes sin desbordes. */
 const shiftMonth = (dateStr: string, delta: number): string => {
   const date = parseLocalDate(dateStr) ?? new Date();
   return toLocalDateStr(new Date(date.getFullYear(), date.getMonth() + delta, 1));
 };
 
-/**
- * Calendario de dietas (Lite = solo vista mes).
- * Trabajo temporal en el navegador para armar e imprimir; no es archivo clínico.
- */
+/** Calendario de dietas Lite: sin catálogo de plantillas. */
 export default function DietCalendarView({
   dietPlans,
   onCreateFromScratch,
-  onCreateFromCatalog,
-  onSaveToCatalog,
   onCopyFromDate,
   patientParam,
   onDeletePlan,
@@ -59,14 +45,8 @@ export default function DietCalendarView({
 
   const [anchorDate, setAnchorDate] = useState<string>(todayStr);
   const [selectedDate, setSelectedDate] = useState<string | null>(todayStr);
-
   const [planToDelete, setPlanToDelete] = useState<DietPlan | null>(null);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
-  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
-  const [catalogPlan, setCatalogPlan] = useState<DietPlan | null>(null);
-  const [catalogName, setCatalogName] = useState('');
-  const [savingCatalog, setSavingCatalog] = useState(false);
-  const [savedCatalog, setSavedCatalog] = useState(false);
 
   const plansByDate = useMemo<PlansByDate>(() => {
     const grouped: PlansByDate = {};
@@ -99,25 +79,6 @@ export default function DietCalendarView({
   const goToday = (): void => {
     setAnchorDate(todayStr);
     setSelectedDate(todayStr);
-  };
-
-  const openCatalogModal = (plan: DietPlan): void => {
-    setCatalogPlan(plan);
-    setCatalogName(plan.title || `Dieta ${plan.date || ''}`.trim());
-    setSavedCatalog(false);
-    setCatalogModalOpen(true);
-  };
-
-  const handleConfirmSaveToCatalog = async (): Promise<void> => {
-    if (!catalogPlan || !onSaveToCatalog || !catalogName.trim() || savingCatalog) return;
-    setSavingCatalog(true);
-    try {
-      await onSaveToCatalog(catalogPlan, catalogName.trim());
-      setSavedCatalog(true);
-      setTimeout(() => { setCatalogModalOpen(false); setSavedCatalog(false); }, 900);
-    } finally {
-      setSavingCatalog(false);
-    }
   };
 
   const handleCopy = (planId: string): void => {
@@ -179,10 +140,8 @@ export default function DietCalendarView({
             patientParam={patientParam}
             copyCandidates={copyCandidates}
             onCreateFromScratch={(date) => { void onCreateFromScratch(date); }}
-            onCreateFromCatalog={onCreateFromCatalog}
             onCopyFrom={handleCopy}
             onOpenAllDiets={() => setCopyDialogOpen(true)}
-            onSaveToCatalog={openCatalogModal}
             onDeletePlan={setPlanToDelete}
           />
         </div>
@@ -225,16 +184,6 @@ export default function DietCalendarView({
           setPlanToDelete(null);
           window.location.reload();
         }}
-      />
-
-      <SaveToCatalogModal
-        open={catalogModalOpen}
-        value={catalogName}
-        onChange={setCatalogName}
-        onSave={() => void handleConfirmSaveToCatalog()}
-        onClose={() => setCatalogModalOpen(false)}
-        saving={savingCatalog}
-        saved={savedCatalog}
       />
     </div>
   );

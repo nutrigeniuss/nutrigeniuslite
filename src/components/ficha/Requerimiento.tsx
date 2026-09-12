@@ -26,7 +26,7 @@ import { useReqState } from './requerimiento/useReqState';
 import type { MetDay } from './metCalculator/types';
 import { formatPatientAge } from '@/lib/patients/age';
 
-export default function Requerimiento({ patient, onUpdate, tab = 'energetico', fixedMeasurement, registerAutosave, registerManualSave, hideMeasurementSelector = false, autoSaveOnChange = false, macroPresentation = 'standard' }: RequerimientoProps) {
+export default function Requerimiento({ patient, onUpdate, tab = 'energetico', fixedMeasurement, registerAutosave, registerManualSave, hideMeasurementSelector = false, autoSaveOnChange = false, macroPresentation = 'standard', hideContextStats = false }: RequerimientoProps) {
   const measurements = asMeasurementArray(patient.measurements);
   const sortedMeasurements = [...measurements].sort((left, right) => new Date(right.date || 0).getTime() - new Date(left.date || 0).getTime());
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -434,11 +434,13 @@ export default function Requerimiento({ patient, onUpdate, tab = 'energetico', f
     return (
       <div className="max-w-4xl space-y-5">
         {macroPresentation === 'exchange-clinical' || macroPresentation === 'diet-compact' ? (
+          hideContextStats ? null : (
           <div className="flex flex-wrap gap-3.5">
             {quickStats.map((item) => (
               <SummaryMetricCard key={item.label} icon={item.icon} label={item.label} value={item.value} hint={item.hint} />
             ))}
           </div>
+          )
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-slate-200/70 bg-white px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
             <div className="flex items-center gap-3">

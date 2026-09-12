@@ -8,7 +8,6 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import { useInspection } from '@/lib/InspectionContext';
 import DietCalendarView from './DietCalendarView';
-import DietCatalogModal from './DietCatalogModal';
 import WeeklyPrintView from '@/components/diet/WeeklyPrintView';
 import Requerimiento from '@/components/ficha/Requerimiento';
 import {
@@ -514,6 +513,7 @@ export default function PatientDiet({ patient, tab = 'alimentos', onUpdate, regi
               registerAutosave={registerMacroAutosave}
               registerManualSave={registerMacroManualSave}
               macroPresentation="diet-compact"
+              hideContextStats
             />
 
             <div className="mt-4 flex flex-wrap justify-end gap-2.5 border-t border-slate-200/70 pt-4">
@@ -575,8 +575,6 @@ export default function PatientDiet({ patient, tab = 'alimentos', onUpdate, regi
                 patientParam={patientParam}
                 onSelectedDateChange={setSelectedCalendarDate}
                 onCreateFromScratch={(date: string) => openActionOrRequestMacros({ kind: 'alimentos-nuevo', date })}
-                onCreateFromCatalog={handleCreateFromCatalog}
-                onSaveToCatalog={handleSaveDietToCatalog}
                 onCopyFromDate={handleCopyFromDate}
                 onDeletePlan={async (planId: string) => {
                   if (!user?.id) return;
@@ -608,8 +606,6 @@ export default function PatientDiet({ patient, tab = 'alimentos', onUpdate, regi
             )}
           </>
         ) : null}
-
-        {showCatalogModal ? <DietCatalogModal onClose={() => setShowCatalogModal(false)} onSelect={handleCatalogSelect} /> : null}
 
         {showWeeklyPrint ? (
           <WeeklyPrintView
@@ -643,6 +639,7 @@ export default function PatientDiet({ patient, tab = 'alimentos', onUpdate, regi
             hideMeasurementSelector
             autoSaveOnChange
             macroPresentation="exchange-clinical"
+            hideContextStats
           />
 
           <div className="flex flex-wrap justify-end gap-2.5 border-t border-slate-200/70 pt-4">

@@ -71,16 +71,10 @@ export default function DieteticaPanel({
     [persistRecall],
   );
 
-  const handleDelete = useCallback(async () => {
-    if (!window.confirm('¿Eliminar el recordatorio 24 h de esta ficha?')) return;
-    await persistRecall([]);
-  }, [persistRecall]);
-
   return (
     <Recall24hEditor
       measurement={measurement}
       onSave={handleSave}
-      onDelete={() => void handleDelete()}
       targetCalories={targetCalories}
       registerAutosave={registerAutosave}
       wide

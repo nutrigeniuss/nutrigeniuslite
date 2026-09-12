@@ -12,7 +12,7 @@ import {
   ANTRO_TAB_KEYS, MEASURE_TAB_KEYS,
 } from "./consult/consultConfig";
 import MeasureInput from "./consult/MeasureInput";
-import PatientDatosPanel from "./consult/PatientDatosPanel";
+import FichaContextBar from "./consult/FichaContextBar";
 import DietPanel from "./diet/DietPanel";
 import ResultsPrintButton from "./results/ResultsPrintButton";
 import Bioquimica from "./Bioquimica";
@@ -276,6 +276,24 @@ export default function ConsultDetail({
         })}
       </div>
 
+      <FichaContextBar
+        patient={patient}
+        measurement={data}
+        onPatientChange={(patch) => {
+          if (onPatientUpdate) void onPatientUpdate(patch);
+          else void onUpdate(patch);
+        }}
+        onMeasurementChange={(patch) => {
+          setData((prev) => {
+            const next = { ...prev, ...patch };
+            const list = [...measurements];
+            list[consultIndex] = next;
+            void onUpdate({ measurements: list });
+            return next;
+          });
+        }}
+      />
+
       <div className={
         tab === "cal" || tab === "bioq" || tab === "dietetica" || DIET_TABS.has(tab)
           ? ""
@@ -310,6 +328,7 @@ export default function ConsultDetail({
               fixedMeasurement={data}
               registerAutosave={registerRequirementAutosave}
               autoSaveOnChange
+              hideContextStats
               onUpdate={async (updates) => {
                 const req = updates.measurements?.[0]?.requirement;
                 if (req) {
@@ -341,18 +360,6 @@ export default function ConsultDetail({
                 if (onPatientUpdate) return onPatientUpdate(patch);
                 return onUpdate(patch);
               }}
-            />
-          </div>
-        ) : tab === "datos" ? (
-          <div className={`${shellClass} ng-inset`}>
-            <PatientDatosPanel
-              patient={patient}
-              measurementDate={data.date}
-              onPatientChange={(patch) => {
-                if (onPatientUpdate) void onPatientUpdate(patch);
-                else void onUpdate(patch);
-              }}
-              onMeasurementDateChange={(date) => setField("date", date)}
             />
           </div>
         ) : isAntro ? (

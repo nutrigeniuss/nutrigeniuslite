@@ -11,11 +11,6 @@ export const parseNum2 = (raw) => {
 
 export const GROUPS = [
   {
-    key: "datos",
-    label: "Datos",
-    tabs: [{ key: "datos", label: "Datos" }],
-  },
-  {
     key: "antro",
     label: "Antropometría",
     tabs: [

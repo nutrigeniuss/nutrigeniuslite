@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "@/components/ui/use-toast";
@@ -95,8 +95,9 @@ export default function Recall24hEditor({
   };
 
   const handleSave = async (origin = "manual") => {
+    // En Lite (embedded) persistimos también vacío: es borrador de calculadora.
     const hasItems = meals.some((m) => Array.isArray(m.items) && m.items.length > 0);
-    if (!hasItems) {
+    if (!embedded && !hasItems) {
       toast({
         title: "Recordatorio vacío",
         description: "Agrega al menos un alimento antes de guardar.",
@@ -111,7 +112,7 @@ export default function Recall24hEditor({
     setLastSavedMeals(meals);
     setSaved(true);
 
-    if (origin === "autosave") {
+    if (origin === "autosave" || embedded) {
       window.setTimeout(() => setSaved(false), 1200);
       return;
     }
@@ -122,9 +123,20 @@ export default function Recall24hEditor({
     });
     setTimeout(() => {
       setSaved(false);
-      if (!embedded && typeof onClose === "function") onClose();
+      if (typeof onClose === "function") onClose();
     }, 1200);
   };
+
+  // Autosave al editar (sin botones Guardar/Eliminar en modo calculadora).
+  useEffect(() => {
+    if (!embedded) return undefined;
+    if (!hasUnsavedChanges) return undefined;
+    const timer = window.setTimeout(() => {
+      void handleSave("autosave");
+    }, 600);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce on meals only
+  }, [embedded, meals, hasUnsavedChanges]);
 
   const flushAutosave = useAutosaveOnLeave({
     hasUnsavedChanges,
@@ -156,39 +168,15 @@ export default function Recall24hEditor({
             Calculadora · mismos alimentos que Dieta · se limpia con Nueva ficha
           </p>
         </div>
-        <div className="flex flex-shrink-0 items-center gap-1.5">
+        {!embedded && typeof onClose === "function" ? (
           <button
             type="button"
-            onClick={() => void handleSave("manual")}
-            className={`flex items-center gap-2 rounded-[10px] px-4 py-2 text-sm font-semibold transition-all ${
-              saved ? "bg-emerald-500 text-white" : "bg-brand-500 text-white shadow-sm hover:bg-brand-600"
-            }`}
+            onClick={onClose}
+            className="rounded-[10px] px-3 py-2 text-xs text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
           >
-            <Save className="h-4 w-4" />
-            {saved ? "¡Guardado!" : "Guardar"}
+            Cerrar
           </button>
-          {typeof onDelete === "function" ? (
-            <button
-              type="button"
-              onClick={onDelete}
-              title="Eliminar este recordatorio"
-              aria-label="Eliminar recordatorio"
-              className="flex items-center gap-1 rounded-[10px] border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-500 transition hover:border-rose-500 hover:bg-rose-500 hover:text-white"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Eliminar</span>
-            </button>
-          ) : null}
-          {!embedded && typeof onClose === "function" ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-[10px] px-3 py-2 text-xs text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-            >
-              Cerrar
-            </button>
-          ) : null}
-        </div>
+        ) : null}
       </div>
 
       <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1">

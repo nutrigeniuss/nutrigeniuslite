@@ -95,6 +95,8 @@ export type RequerimientoProps = {
   registerManualSave?: (handler: (() => Promise<void>) | null) => void;
   hideMeasurementSelector?: boolean;
   autoSaveOnChange?: boolean;
+  /** Oculta la franja Edad/Sexo/Peso cuando ya hay barra global de ficha. */
+  hideContextStats?: boolean;
   macroPresentation?: 'standard' | 'exchange-clinical' | 'diet-compact';
 };
 

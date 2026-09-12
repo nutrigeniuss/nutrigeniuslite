@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Copy, FileText, Pencil, Trash2 } from 'lucide-react';
+import { Copy, FileText, Pencil, Trash2 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { calcPlanTotals, mealCountLabel } from '@/lib/diet/weekSummary';
 import { formatDayTitle, formatDayWithMonth, formatLongDate } from '@/lib/weekRange';
@@ -18,30 +18,16 @@ type DayPanelProps = {
   plans: DietPlan[];
   todayStr: string;
   patientParam: string;
-  /** Dietas de otros días que se pueden copiar a este, más recientes primero. */
   copyCandidates: CopyCandidate[];
   onCreateFromScratch: (date: string) => void;
-  onCreateFromCatalog?: (date: string) => void;
   onCopyFrom: (planId: string) => void;
   onOpenAllDiets: () => void;
-  onSaveToCatalog: (plan: DietPlan) => void;
   onDeletePlan: (plan: DietPlan) => void;
 };
 
-// Cuántas dietas se ofrecen en el panel antes de mandar a la ventana completa.
-// Con un paciente de un año la lista entera no cabe y taparía todo lo demás.
 const ATAJOS_COPIA = 3;
 
-/**
- * El panel del día seleccionado. Tiene dos caras muy distintas:
- *
- *  - Día VACÍO: crear desde cero, del catálogo, o copiar directamente de una de
- *    las últimas dietas. Antes «Copiar de otro día» cambiaba el panel entero a
- *    un modo de selección; aquí la lista ya está a la vista y copiar es un clic.
- *
- *  - Día CON dieta: fuera las opciones de crear, dentro las comidas con sus
- *    calorías, para saber qué tiene sin abrirla.
- */
+/** Panel del día (Lite: sin catálogo de dietas). */
 export default function DayPanel({
   dateStr,
   plans,
@@ -49,10 +35,8 @@ export default function DayPanel({
   patientParam,
   copyCandidates,
   onCreateFromScratch,
-  onCreateFromCatalog,
   onCopyFrom,
   onOpenAllDiets,
-  onSaveToCatalog,
   onDeletePlan,
 }: DayPanelProps) {
   if (!dateStr) {
@@ -125,32 +109,23 @@ export default function DayPanel({
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
               <Link
                 to={createPageUrl(`DietCreator?planId=${plan.id}&${patientParam}`)}
-                className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-brand-500 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(59,95,235,0.3)] transition-colors hover:bg-[#2843c9]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-brand-500 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(59,95,235,0.3)] transition-colors hover:bg-[#2843c9]"
               >
                 <Pencil className="h-4 w-4" />
                 Abrir dieta
               </Link>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => onSaveToCatalog(plan)}
-                  className="flex-1 rounded-[10px] border border-[#e6eaf4] py-2 text-[12.5px] font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-                >
-                  Guardar en catálogo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDeletePlan(plan)}
-                  aria-label="Eliminar la dieta de este día"
-                  title="Eliminar la dieta de este día"
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] border border-[#e6eaf4] text-slate-400 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => onDeletePlan(plan)}
+                aria-label="Eliminar la dieta de este día"
+                title="Eliminar la dieta de este día"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] border border-[#e6eaf4] text-slate-400 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           </>
         ) : (
@@ -168,22 +143,6 @@ export default function DayPanel({
                 <span className="block text-[11.5px] text-slate-500">Comenzar desde cero</span>
               </span>
             </button>
-
-            {onCreateFromCatalog ? (
-              <button
-                type="button"
-                onClick={() => onCreateFromCatalog(dateStr)}
-                className="flex w-full items-center gap-3 rounded-[12px] border border-[#e6eaf4] p-3 text-left transition-colors hover:bg-slate-50"
-              >
-                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[9px] bg-slate-100 text-slate-500">
-                  <BookOpen className="h-4 w-4" />
-                </span>
-                <span>
-                  <span className="block text-[13.5px] font-semibold leading-tight text-slate-800">Del catálogo</span>
-                  <span className="block text-[11.5px] text-slate-500">Usar una dieta guardada</span>
-                </span>
-              </button>
-            ) : null}
 
             {atajos.length > 0 ? (
               <>
