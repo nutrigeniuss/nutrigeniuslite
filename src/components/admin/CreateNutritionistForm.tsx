@@ -7,6 +7,7 @@ import {
   whatsAppSendUrl,
 } from '@/lib/adminWhatsAppInvite';
 import AccessDurationPicker from '@/components/admin/AccessDurationPicker';
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
 
 type Props = {
   busy: boolean;
@@ -55,8 +56,8 @@ export default function CreateNutritionistForm({ busy, onSubmit }: Props) {
       setLocalError('El email es obligatorio');
       return;
     }
-    if (password.length < 6) {
-      setLocalError('La contraseña debe tener al menos 6 caracteres');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setLocalError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
       return;
     }
 
@@ -149,7 +150,7 @@ export default function CreateNutritionistForm({ busy, onSubmit }: Props) {
             id="create-nutri-password"
             type="text"
             required
-            minLength={6}
+            minLength={MIN_PASSWORD_LENGTH}
             className="ng-input !mt-0 font-mono tracking-wide"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

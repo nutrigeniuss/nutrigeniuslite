@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, supabaseConfigured } from './supabase';
 import { canUseCalculator, isAdmin, resolveLiteAccess, type LiteAccessProfile, type LiteAccessStatus } from './access';
+import { validatePassword } from './passwordPolicy';
+import { publicSiteUrl } from './publicSite';
 
 export type ProfileRow = LiteAccessProfile & {
   id: string;
@@ -20,6 +22,8 @@ type AuthState = {
   configured: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
+  requestPasswordReset: (email: string) => Promise<{ error?: string }>;
+  updatePassword: (password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -100,11 +104,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {
     if (!supabase) return { error: 'Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY' };
+    const invalid = validatePassword(password);
+    if (invalid) return { error: invalid };
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
     });
+    return error ? { error: error.message } : {};
+  }, []);
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    if (!supabase) return { error: 'Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY' };
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) return { error: 'El email es obligatorio' };
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+      redirectTo: `${publicSiteUrl().replace(/\/$/, '')}/reset-password`,
+    });
+    return error ? { error: error.message } : {};
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    if (!supabase) return { error: 'Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY' };
+    const invalid = validatePassword(password);
+    if (invalid) return { error: invalid };
+    const { error } = await supabase.auth.updateUser({ password });
     return error ? { error: error.message } : {};
   }, []);
 
@@ -125,9 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     configured: supabaseConfigured,
     signIn,
     signUp,
+    requestPasswordReset,
+    updatePassword,
     signOut,
     refreshProfile,
-  }), [ready, session, profile, access, signIn, signUp, signOut, refreshProfile]);
+  }), [ready, session, profile, access, signIn, signUp, requestPasswordReset, updatePassword, signOut, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

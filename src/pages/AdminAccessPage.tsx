@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import CreateNutritionistForm from '@/components/admin/CreateNutritionistForm';
 import UserAccessCard from '@/components/admin/UserAccessCard';
+import { MIN_PASSWORD_LENGTH } from '@/lib/passwordPolicy';
 
 type UserRow = {
   id: string;
@@ -157,10 +158,10 @@ export default function AdminAccessPage() {
       setError('No se puede cambiar la clave de una cuenta admin');
       return;
     }
-    const password = window.prompt('Nueva contraseña temporal (mín. 6)');
+    const password = window.prompt(`Nueva contraseña temporal (mín. ${MIN_PASSWORD_LENGTH})`);
     if (!password) return;
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
       return;
     }
     setBusyId(id);

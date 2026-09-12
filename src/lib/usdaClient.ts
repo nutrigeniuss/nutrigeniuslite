@@ -17,7 +17,7 @@
 // unificarlos cambiaría lo que queda grabado en las dietas ya existentes. Esa
 // decisión es clínica, no técnica, y no se toma en una refactorización.
 
-const USDA_API_KEY = import.meta.env.VITE_USDA_API_KEY || 'DEMO_KEY';
+const USDA_API_KEY = (import.meta.env.VITE_USDA_API_KEY as string | undefined)?.trim() || '';
 
 const USDA_SEARCH_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
 
@@ -62,6 +62,11 @@ export const searchUsdaFoods = async (
   query: string,
   options: UsdaSearchOptions = {},
 ): Promise<UsdaFood[]> => {
+  // Sin clave real no llamamos a la API (evita DEMO_KEY en producción).
+  if (!USDA_API_KEY || USDA_API_KEY === 'DEMO_KEY') {
+    return [];
+  }
+
   const pageSize = options.pageSize ?? USDA_DEFAULT_PAGE_SIZE;
   const url =
     `${USDA_SEARCH_URL}?query=${encodeURIComponent(query)}` +
