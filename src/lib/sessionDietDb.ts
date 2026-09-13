@@ -3,6 +3,7 @@
  * Misma forma de API que supabase.from(...).select/insert/update/delete
  * para diet_plans y exchange_diets — sin gestión de pacientes en servidor.
  */
+import { SESSION_FICHA_ID } from '@/lib/sessionFicha';
 
 type Row = Record<string, unknown> & { id?: string };
 
@@ -26,6 +27,42 @@ function writeAll(table: string, rows: Row[]) {
 
 function uid() {
   return crypto.randomUUID?.() || `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/** Normaliza filas al insertar para que la ficha de sesión las encuentre. */
+function normalizeIncomingRow(table: string, row: Row): Row {
+  const next: Row = { ...row };
+
+  // Plantillas de catálogo: patient_id null + is_catalog true.
+  if (next.is_catalog === true) {
+    if (next.patient_id === '' || next.patient_id === undefined) {
+      next.patient_id = null;
+    }
+  } else if (next.patient_id === '' || next.patient_id == null) {
+    next.patient_id = SESSION_FICHA_ID;
+  }
+
+  if (table === 'diet_plans' && next.is_catalog == null) {
+    next.is_catalog = false;
+  }
+
+  return next;
+}
+
+function rowMatchesEq(row: Row, col: string, val: unknown): boolean {
+  const actual = row[col];
+
+  // Listar ficha de sesión: incluir planes viejos guardados con patient_id vacío.
+  if (col === 'patient_id' && val === SESSION_FICHA_ID) {
+    return actual === SESSION_FICHA_ID || actual === '' || actual == null;
+  }
+
+  // .eq('is_catalog', false) debe incluir filas sin el campo.
+  if (col === 'is_catalog' && val === false) {
+    return actual === false || actual == null;
+  }
+
+  return actual === val;
 }
 
 type Filter = { col: string; op: 'eq' | 'in'; val: unknown };
@@ -99,7 +136,7 @@ class LocalQuery {
   private applyFilters(rows: Row[]) {
     return rows.filter((row) =>
       this.filters.every((f) => {
-        if (f.op === 'eq') return row[f.col] === f.val;
+        if (f.op === 'eq') return rowMatchesEq(row, f.col, f.val);
         if (f.op === 'in') return Array.isArray(f.val) && f.val.includes(row[f.col]);
         return true;
       }),
@@ -131,12 +168,15 @@ class LocalQuery {
         const incoming = Array.isArray(this.mutation.payload)
           ? this.mutation.payload
           : [this.mutation.payload as Row];
-        const created = incoming.map((row) => ({
-          ...row,
-          id: row.id || uid(),
-          created_at: row.created_at || new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }));
+        const created = incoming.map((row) => {
+          const normalized = normalizeIncomingRow(this.table, row);
+          return {
+            ...normalized,
+            id: normalized.id || uid(),
+            created_at: normalized.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        });
         rows = [...rows, ...created];
         writeAll(this.table, rows);
         let data: unknown = created;
@@ -203,3 +243,14 @@ export function isSessionDietTable(table: string) {
 export function localFrom(table: string) {
   return new LocalQuery(table);
 }
+
+/** Borra dietas de la sesión (Nueva ficha / logout). */
+export function clearSessionDietStorage(): void {
+  try {
+    Object.values(KEYS).forEach((key) => localStorage.removeItem(key));
+  } catch {
+    /* ignore */
+  }
+}
+
+export { KEYS as SESSION_DIET_STORAGE_KEYS };

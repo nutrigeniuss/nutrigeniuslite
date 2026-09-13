@@ -7,6 +7,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { clearPatientDietCache } from '@/lib/patientDietCache';
+import { clearSessionDietStorage } from '@/lib/sessionDietDb';
+import { SESSION_FICHA_ID } from '@/lib/sessionFicha';
 
 const STORAGE_KEY = 'ng_lite_calc_ficha_v2';
 const LEGACY_STORAGE_KEYS = ['ng_lite_calc_ficha_v1'];
@@ -109,7 +112,7 @@ function emptyWeek(): DietWeekDay[] {
 
 function defaultPatient(): FichaPatient {
   return {
-    id: 'session-ficha',
+    id: SESSION_FICHA_ID,
     full_name: 'Consulta rápida',
     birth_date: null,
     gender: 'Femenino',
@@ -201,6 +204,10 @@ export function FichaProvider({ children }: { children: ReactNode }) {
     try {
       for (const legacy of LEGACY_STORAGE_KEYS) localStorage.removeItem(legacy);
       localStorage.removeItem(STORAGE_KEY);
+      // Dietas multi-día de la consulta: solo se borran aquí (Nueva ficha).
+      clearSessionDietStorage();
+      clearPatientDietCache(SESSION_FICHA_ID);
+      clearPatientDietCache('');
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         patient: blank,
         dietMode: 'alimentos',

@@ -48,17 +48,15 @@ export const buildPatientName = (patient: PatientDietRecord): string => {
 };
 
 export const buildPatientParam = (patient: PatientDietRecord, patientName: string): string => {
-  // En calc la ficha es de sesión: no hay fila en `patients` de Supabase.
+  // Lite: siempre patientId=session-ficha para ligar dietas multi-día a la consulta.
   const isSession = !patient.id || patient.id === 'session-ficha';
+  const patientId = isSession ? 'session-ficha' : patient.id;
   const target = patient.target_calories || 2000;
   const whatsappRaw = typeof patient.whatsapp === 'string' ? patient.whatsapp.trim() : '';
   const whatsappQs = whatsappRaw
     ? `&whatsapp=${encodeURIComponent(whatsappRaw)}`
     : '';
-  if (isSession) {
-    return `patientName=${encodeURIComponent(patientName)}&targetCal=${target}${whatsappQs}`;
-  }
-  return `patientId=${patient.id}&patientName=${encodeURIComponent(patientName)}&targetCal=${target}${whatsappQs}`;
+  return `patientId=${patientId}&patientName=${encodeURIComponent(patientName)}&targetCal=${target}${whatsappQs}`;
 };
 
 export const hasMacroConfiguration = (patient: PatientDietRecord): boolean => {

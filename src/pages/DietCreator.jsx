@@ -31,6 +31,7 @@ import { buildFoodPlanItem } from "@/lib/dietPlanItem";
 import { resolvePatientWhatsapp } from "@/lib/fichaWhatsapp";
 import { dietPlanToPdfFile } from "@/lib/dietPrintPdf";
 import { sendDietViaWhatsApp } from "@/lib/shareDietWhatsApp";
+import { isSessionFichaId, resolveSessionPatientId, SESSION_FICHA_ID } from "@/lib/sessionFicha";
 import {
   DEFAULT_MEALS,
   DEFAULT_MEAL_IDS,
@@ -70,7 +71,10 @@ export default function DietCreator() {
   const { isInspecting } = useInspection();
   const isMobile = useIsMobile();
   const urlParams      = new URLSearchParams(window.location.search);
-  const patientId      = urlParams.get("patientId") || "";
+  const rawPatientId   = urlParams.get("patientId") || "";
+  // Lite: dietas multi-día quedan ligadas a session-ficha hasta Nueva ficha.
+  const patientId      = resolveSessionPatientId(rawPatientId);
+  const isSessionPatient = isSessionFichaId(rawPatientId);
   const patientNameUrl = urlParams.get("patientName") || "Paciente";
   const targetCalUrl   = parseInt(urlParams.get("targetCal")) || 2000;
   const initialDate    = urlParams.get("date") || todayLocalDateStr();
@@ -114,7 +118,9 @@ export default function DietCreator() {
   // plan. Cached for the rest of the session.
   const [printRecipes, setPrintRecipes] = useState(null);
   const [resolvedPatientName, setResolvedPatientName] = useState(patientNameUrl || "Paciente");
-  const [patientValidationState, setPatientValidationState] = useState(patientId ? "loading" : "idle");
+  const [patientValidationState, setPatientValidationState] = useState(
+    isSessionPatient ? "idle" : (rawPatientId ? "loading" : "idle"),
+  );
   const patientToastLockRef = useRef(false);
   const macroAutosaveRef = useRef(null);
   const isSavingRef = useRef(false);
@@ -272,7 +278,14 @@ export default function DietCreator() {
     let cancelled = false;
 
     const loadPatientContext = async () => {
-      if (!patientId) {
+      if (isSessionPatient) {
+        setPatientRecord(null);
+        setResolvedPatientName(patientNameUrl || "Paciente");
+        setPatientValidationState("idle");
+        return;
+      }
+
+      if (!rawPatientId) {
         setPatientRecord(null);
         setResolvedPatientName(patientNameUrl || "Paciente");
         setPatientValidationState("idle");
@@ -292,7 +305,7 @@ export default function DietCreator() {
       const { data, error } = await supabase
         .from("patients")
         .select("*")
-        .eq("id", patientId)
+        .eq("id", rawPatientId)
         .maybeSingle();
 
       if (cancelled) return;
@@ -322,7 +335,7 @@ export default function DietCreator() {
     return () => {
       cancelled = true;
     };
-  }, [patientId, patientNameUrl, user?.id]);
+  }, [isSessionPatient, patientId, patientNameUrl, rawPatientId, user?.id]);
 
   const activeMeasurement = useMemo(
     () => resolveMeasurementForPlanDate(patientRecord?.measurements, date),
@@ -534,7 +547,6 @@ export default function DietCreator() {
 
     // Regla de negocio: una sola dieta por alimentos por paciente y fecha.
     // Solo aplica al CREAR (insert). Al editar un plan existente no se revisa.
-    // Las dietas de catálogo (patient_id null) quedan fuera por el filtro de patient_id.
     if (!currentPlanId && patientId) {
       const { data: existingForDate, error: dupError } = await supabase
         .from("diet_plans")
@@ -560,9 +572,16 @@ export default function DietCreator() {
     const normalizedTitle = title.trim() || DEFAULT_DIET_PLAN_TITLE;
     const data = {
       nutritionist_id: user?.id || null,
-      title: normalizedTitle, patient_id: patientId, patient_name: patientId ? resolvedPatientName : patientNameUrl, date,
-      target_calories: macros.calories, target_protein: macros.protein,
-      target_carbs: macros.carbs, target_fat: macros.fat, meals,
+      title: normalizedTitle,
+      patient_id: patientId || SESSION_FICHA_ID,
+      patient_name: resolvedPatientName || patientNameUrl,
+      date,
+      target_calories: macros.calories,
+      target_protein: macros.protein,
+      target_carbs: macros.carbs,
+      target_fat: macros.fat,
+      meals,
+      is_catalog: false,
     };
 
     // Defense-in-depth: scope the UPDATE to the current nutritionist so a

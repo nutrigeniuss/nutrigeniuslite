@@ -42,6 +42,7 @@ import { openHtmlPrintPreview } from "@/lib/htmlPrintPreview";
 import { htmlToPdfFile } from "@/lib/pdfFromHtml";
 import { resolvePatientWhatsapp } from "@/lib/fichaWhatsapp";
 import { sendDietViaWhatsApp } from "@/lib/shareDietWhatsApp";
+import { isSessionFichaId, resolveSessionPatientId, SESSION_FICHA_ID } from "@/lib/sessionFicha";
 import ExchangeFoodIndications from "@/components/exchanges/ExchangeFoodIndications";
 import ExchangeTable from "@/components/exchanges/ExchangeTable";
 import ExchangeToolbar from "@/components/exchanges/ExchangeToolbar";
@@ -56,7 +57,9 @@ export default function ExchangeDietCreator() {
   const isMobile = useIsMobile();
   const urlParams = new URLSearchParams(window.location.search);
   const initialPlanId = urlParams.get("planId") || "";
-  const patientId = urlParams.get("patientId") || "";
+  const rawPatientId = urlParams.get("patientId") || "";
+  const patientId = resolveSessionPatientId(rawPatientId);
+  const isSessionPatient = isSessionFichaId(rawPatientId);
   const patientName = urlParams.get("patientName") || "Paciente";
   const targetKcal = parseInt(urlParams.get("targetCal") || "2000");
   const requestedDate = urlParams.get("date") || "";
@@ -81,7 +84,9 @@ export default function ExchangeDietCreator() {
   const [tab, setTab] = useState("tabla");
   const [currentPlanId, setCurrentPlanId] = useState(initialPlanId);
   const [resolvedPatientName, setResolvedPatientName] = useState(patientName || "Paciente");
-  const [patientValidationState, setPatientValidationState] = useState(patientId ? "loading" : "idle");
+  const [patientValidationState, setPatientValidationState] = useState(
+    isSessionPatient ? "idle" : (rawPatientId ? "loading" : "idle"),
+  );
   const [patientRecord, setPatientRecord] = useState(null);
   const [showMacroEditor, setShowMacroEditor] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
@@ -212,7 +217,14 @@ export default function ExchangeDietCreator() {
     let cancelled = false;
 
     const loadPatientContext = async () => {
-      if (!patientId) {
+      if (isSessionPatient) {
+        setPatientRecord(null);
+        setResolvedPatientName(patientName || "Paciente");
+        setPatientValidationState("idle");
+        return;
+      }
+
+      if (!rawPatientId) {
         setPatientRecord(null);
         setResolvedPatientName(patientName || "Paciente");
         setPatientValidationState("idle");
@@ -231,7 +243,7 @@ export default function ExchangeDietCreator() {
       const { data, error } = await supabase
         .from("patients")
         .select("*")
-        .eq("id", patientId)
+        .eq("id", rawPatientId)
         .maybeSingle();
 
       if (cancelled) return;
@@ -261,7 +273,7 @@ export default function ExchangeDietCreator() {
     return () => {
       cancelled = true;
     };
-  }, [patientId, patientName, user?.id]);
+  }, [isSessionPatient, patientId, patientName, rawPatientId, user?.id]);
 
   const activeScenario = useMemo(
     () => scenarios.find((scenario) => scenario.key === activeScenarioId) || scenarios[0] || null,
@@ -678,7 +690,10 @@ export default function ExchangeDietCreator() {
     const scenarioPayload = scenarios.map((scenario) => normalizeScenario(scenario));
     const payload = {
       nutritionist_id: user?.id || null,
-      title: normalizedTitle, patient_id: patientId, patient_name: patientId ? resolvedPatientName : patientName, date,
+      title: normalizedTitle,
+      patient_id: patientId || SESSION_FICHA_ID,
+      patient_name: resolvedPatientName || patientName,
+      date,
       meals,
       food_list_selections: selections,
       active_group_keys: activeGroupKeys,
