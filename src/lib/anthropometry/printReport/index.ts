@@ -63,6 +63,7 @@ import { buildRequirementSection } from './requerimiento';
 import { buildIdealWeightSection } from './pesoIdeal';
 import { buildPerimeterAndSkinfoldSections } from './perimetrosYPliegues';
 import { buildCompositionSections } from './composicion';
+import { buildBioimpedanceSection } from './bioimpedancia';
 import { REPORT_CSS } from './styles';
 import { getCurrentLocale } from '@/lib/formatLocale';
 import { openHtmlPrintPreview } from '@/lib/htmlPrintPreview';
@@ -259,6 +260,9 @@ export function buildHtml({ patient, measurement, brand = 'NutriGenius', brandLo
     triDx, subDx, triSubDx, triSubSum,
   });
 
+  // Espejo de lecturas BIA (sin recálculo). Vacío si no hay datos.
+  const seccionBio = buildBioimpedanceSection(measurement?.bioimpedance);
+
   // ── Secciones: composición corporal y somatotipo ──
   // Las cuatro comparten el mismo input de cálculo —incluida la fórmula de
   // grasa que el nutricionista tiene puesta— y viven en ./composicion.
@@ -315,10 +319,10 @@ export function buildHtml({ patient, measurement, brand = 'NutriGenius', brandLo
   <div class="page">
     ${headerHtml}
     ${seccionGestante
-      ? `${seccionGestante}${seccion4}`
+      ? `${seccionGestante}${seccionBio}${seccion4}`
       : isChild
-        ? `${seccionPediatrica}${seccionCurvasOMS}${seccion4}`
-        : `${seccion1}${seccion2}${seccionPliegues}${seccion3}${seccion4comp}${seccion5comp}${seccionSoma}${seccion4}`}
+        ? `${seccionPediatrica}${seccionCurvasOMS}${seccionBio}${seccion4}`
+        : `${seccion1}${seccion2}${seccionBio}${seccionPliegues}${seccion3}${seccion4comp}${seccion5comp}${seccionSoma}${seccion4}`}
     ${footer}
     ${seccionGestante ? `<p class="lbl-mini" style="margin-top:10px">Fuente de los rangos: ${esc(GAIN_TABLE_SOURCE)}</p>` : ''}
   </div>

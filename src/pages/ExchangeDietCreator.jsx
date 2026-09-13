@@ -40,6 +40,7 @@ import ResumenPanel from "@/components/exchanges/ResumenPanel";
 import { buildExchangePrintHtml } from "@/lib/exchangePrint";
 import { openHtmlPrintPreview } from "@/lib/htmlPrintPreview";
 import { isSessionFichaId, resolveSessionPatientId, SESSION_FICHA_ID } from "@/lib/sessionFicha";
+import { useFicha } from "@/lib/FichaContext";
 import ExchangeFoodIndications from "@/components/exchanges/ExchangeFoodIndications";
 import ExchangeTable from "@/components/exchanges/ExchangeTable";
 import ExchangeToolbar from "@/components/exchanges/ExchangeToolbar";
@@ -50,13 +51,14 @@ import { logger, errorMessage } from '@/lib/logger';
 // ─── Main page ───────────────────────────────────────────────────────────────
 export default function ExchangeDietCreator() {
   const { user } = useAuth();
+  const { patient: fichaPatient, updatePatient: updateFichaPatient } = useFicha();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const urlParams = new URLSearchParams(window.location.search);
   const initialPlanId = urlParams.get("planId") || "";
   const rawPatientId = urlParams.get("patientId") || "";
   const patientId = resolveSessionPatientId(rawPatientId);
-  const isSessionPatient = isSessionFichaId(rawPatientId);
+  const isSessionPatient = isSessionFichaId(rawPatientId) || patientId === SESSION_FICHA_ID;
   const patientName = urlParams.get("patientName") || "Paciente";
   const targetKcal = parseInt(urlParams.get("targetCal") || "2000");
   const requestedDate = urlParams.get("date") || "";
@@ -82,9 +84,9 @@ export default function ExchangeDietCreator() {
   const [currentPlanId, setCurrentPlanId] = useState(initialPlanId);
   const [resolvedPatientName, setResolvedPatientName] = useState(patientName || "Paciente");
   const [patientValidationState, setPatientValidationState] = useState(
-    isSessionPatient ? "idle" : (rawPatientId ? "loading" : "idle"),
+    isSessionPatient ? "valid" : (rawPatientId ? "loading" : "idle"),
   );
-  const [patientRecord, setPatientRecord] = useState(null);
+  const [patientRecord, setPatientRecord] = useState(() => (isSessionPatient ? fichaPatient : null));
   const [showMacroEditor, setShowMacroEditor] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
   // Colapsar el panel de resumen nutricional en desktop (igual que "por alimentos").
@@ -214,9 +216,9 @@ export default function ExchangeDietCreator() {
 
     const loadPatientContext = async () => {
       if (isSessionPatient) {
-        setPatientRecord(null);
-        setResolvedPatientName(patientName || "Paciente");
-        setPatientValidationState("idle");
+        setPatientRecord(fichaPatient);
+        setResolvedPatientName(fichaPatient?.full_name || patientName || "Paciente");
+        setPatientValidationState("valid");
         return;
       }
 
@@ -269,7 +271,7 @@ export default function ExchangeDietCreator() {
     return () => {
       cancelled = true;
     };
-  }, [isSessionPatient, patientId, patientName, rawPatientId, user?.id]);
+  }, [fichaPatient, isSessionPatient, patientId, patientName, rawPatientId, user?.id]);
 
   const activeScenario = useMemo(
     () => scenarios.find((scenario) => scenario.key === activeScenarioId) || scenarios[0] || null,
@@ -712,6 +714,22 @@ export default function ExchangeDietCreator() {
   const handlePatientRequirementUpdate = useCallback(async (updates) => {
     if (!patientId) return;
 
+    if (isSessionPatient) {
+      const ok = await updateFichaPatient(updates);
+      if (!ok) {
+        toast({
+          title: "No se pudieron actualizar los macronutrientes",
+          description: "Intenta nuevamente.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      const next = { ...fichaPatient, ...updates };
+      setPatientRecord(next);
+      setResolvedPatientName(next.full_name || patientName || "Paciente");
+      return true;
+    }
+
     const { data, error } = await supabase
       .from("patients")
       .update(updates)
@@ -726,12 +744,13 @@ export default function ExchangeDietCreator() {
         description: error.message || "Intenta nuevamente.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
     setPatientRecord(data);
     setResolvedPatientName(buildPatientDisplayName(data) || patientName || "Paciente");
-  }, [patientId, patientName]);
+    return true;
+  }, [fichaPatient, isSessionPatient, patientId, patientName, updateFichaPatient]);
 
   const handleCloseMacroEditor = async () => {
     if (macroAutosaveRef.current) {

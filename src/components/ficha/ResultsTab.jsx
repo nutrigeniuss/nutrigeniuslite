@@ -10,6 +10,7 @@ import PlieguesSection from "./results/PlieguesSection";
 import ComposicionSection from "./results/ComposicionSection";
 import SomatocartaSection from "./results/SomatocartaSection";
 import ResultsSummary from "./results/ResultsSummary";
+import BioimpedanciaSection from "./results/BioimpedanciaSection";
 
 export default function ResultsTab({ data, sex, patient, onGoToField, onSetField }) {
   const ageYears = calcAge(patient?.birth_date, data?.date);
@@ -24,6 +25,7 @@ export default function ResultsTab({ data, sex, patient, onGoToField, onSetField
             <ResultsPrintButton patient={patient} measurement={data} />
           </div>
           <GestacionSection data={data} patient={patient} pregnancy={pregnancy} />
+          <BioimpedanciaSection data={data} />
         </div>
       </GoToFieldContext.Provider>
     );
@@ -41,6 +43,7 @@ export default function ResultsTab({ data, sex, patient, onGoToField, onSetField
           <PesoSection data={data} sex={normSex} ageYears={ageYears} patient={patient} onSetField={onSetField} />
           <PerimetroSection data={data} sex={normSex} ageYears={ageYears} />
         </div>
+        <BioimpedanciaSection data={data} />
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           <PlieguesSection data={data} sex={normSex} ageYears={ageYears} />
           <ComposicionSection data={data} sex={normSex} ageYears={ageYears} onGoToField={onGoToField} />

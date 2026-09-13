@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eraser, LogOut, Menu, Shield, X } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import { FichaProvider, useFicha } from '@/lib/FichaContext';
+import { useFicha } from '@/lib/FichaContext';
 import BrandLogo from '@/components/BrandLogo';
 import ConsultDetail from '@/components/ficha/ConsultDetail';
 import InstallAppButton from '@/components/InstallAppButton';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 
-function FichaShell() {
+export default function CalculatorPage() {
   const { profile, signOut, admin } = useAuth();
   const { patient, updatePatient, resetFicha, fichaRevision } = useFicha();
   const [signingOut, setSigningOut] = useState(false);
@@ -145,13 +145,5 @@ function FichaShell() {
         destructive
       />
     </div>
-  );
-}
-
-export default function CalculatorPage() {
-  return (
-    <FichaProvider>
-      <FichaShell />
-    </FichaProvider>
   );
 }

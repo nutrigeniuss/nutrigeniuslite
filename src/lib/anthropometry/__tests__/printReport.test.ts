@@ -199,3 +199,24 @@ describe('printReport — la marca del profesional', () => {
     expect(html).toContain('Clínica San Borja');
   });
 });
+
+describe('printReport — bioimpedancia', () => {
+  it('omite la sección si no hay lecturas BIA', () => {
+    const html = buildHtml({ patient: adulto(), measurement: medicion() });
+    expect(html).not.toContain('Bioimpedancia (equipo)');
+  });
+
+  it('incluye las lecturas capturadas del equipo', () => {
+    const html = buildHtml({
+      patient: adulto(),
+      measurement: medicion({
+        bioimpedance: { fat_total: 28.5, muscle_mass: 22.1, body_water: 52 },
+      }),
+    });
+    expect(html).toContain('Bioimpedancia (equipo)');
+    expect(html).toContain('Grasa total');
+    expect(html).toContain('28.5');
+    expect(html).toContain('Masa muscular');
+    expect(html).toContain('Agua corporal');
+  });
+});

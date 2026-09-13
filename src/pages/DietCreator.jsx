@@ -29,6 +29,7 @@ import { useAutosaveOnLeave } from "@/hooks/useAutosaveOnLeave";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { buildFoodPlanItem } from "@/lib/dietPlanItem";
 import { resolveSessionPatientId, isSessionFichaId, SESSION_FICHA_ID } from "@/lib/sessionFicha";
+import { useFicha } from "@/lib/FichaContext";
 import {
   DEFAULT_MEALS,
   DEFAULT_MEAL_IDS,
@@ -64,6 +65,7 @@ import {
 // ── Main DietCreator ───────────────────────────────────────────────────────────
 export default function DietCreator() {
   const { user } = useAuth();
+  const { patient: fichaPatient, updatePatient: updateFichaPatient } = useFicha();
   // Modo inspección (titular Pro+): el editor es de SOLO LECTURA.
   const { isInspecting } = useInspection();
   const isMobile = useIsMobile();
@@ -71,7 +73,7 @@ export default function DietCreator() {
   const rawPatientId   = urlParams.get("patientId") || "";
   // Lite: dietas multi-día quedan ligadas a session-ficha hasta Nueva ficha.
   const patientId      = resolveSessionPatientId(rawPatientId);
-  const isSessionPatient = isSessionFichaId(rawPatientId);
+  const isSessionPatient = isSessionFichaId(rawPatientId) || patientId === SESSION_FICHA_ID;
   const patientNameUrl = urlParams.get("patientName") || "Paciente";
   const targetCalUrl   = parseInt(urlParams.get("targetCal")) || 2000;
   const initialDate    = urlParams.get("date") || todayLocalDateStr();
@@ -90,7 +92,7 @@ export default function DietCreator() {
     fat: Math.round(targetCalUrl * 0.30 / 9),
   });
   const [targetCalories, setTargetCalories] = useState(targetCalUrl); // para compatibilidad
-  const [patientRecord, setPatientRecord] = useState(null);
+  const [patientRecord, setPatientRecord] = useState(() => (isSessionPatient ? fichaPatient : null));
   const [showMacroEditor, setShowMacroEditor] = useState(false);
   const [activeMealId, setActiveMealId]       = useState(DEFAULT_MEALS[0].id);
   const [saving, setSaving]                   = useState(false);
@@ -115,7 +117,7 @@ export default function DietCreator() {
   const [printRecipes, setPrintRecipes] = useState(null);
   const [resolvedPatientName, setResolvedPatientName] = useState(patientNameUrl || "Paciente");
   const [patientValidationState, setPatientValidationState] = useState(
-    isSessionPatient ? "idle" : (rawPatientId ? "loading" : "idle"),
+    isSessionPatient ? "valid" : (rawPatientId ? "loading" : "idle"),
   );
   const patientToastLockRef = useRef(false);
   const macroAutosaveRef = useRef(null);
@@ -225,9 +227,9 @@ export default function DietCreator() {
 
     const loadPatientContext = async () => {
       if (isSessionPatient) {
-        setPatientRecord(null);
-        setResolvedPatientName(patientNameUrl || "Paciente");
-        setPatientValidationState("idle");
+        setPatientRecord(fichaPatient);
+        setResolvedPatientName(fichaPatient?.full_name || patientNameUrl || "Paciente");
+        setPatientValidationState("valid");
         return;
       }
 
@@ -281,7 +283,7 @@ export default function DietCreator() {
     return () => {
       cancelled = true;
     };
-  }, [isSessionPatient, patientId, patientNameUrl, rawPatientId, user?.id]);
+  }, [fichaPatient, isSessionPatient, patientId, patientNameUrl, rawPatientId, user?.id]);
 
   const activeMeasurement = useMemo(
     () => resolveMeasurementForPlanDate(patientRecord?.measurements, date),
@@ -618,6 +620,26 @@ export default function DietCreator() {
   const handlePatientRequirementUpdate = useCallback(async (updates) => {
     if (!patientId) return;
 
+    if (isSessionPatient) {
+      const ok = await updateFichaPatient(updates);
+      if (!ok) {
+        toast({
+          title: "No se pudieron actualizar los macronutrientes",
+          description: "Intenta nuevamente.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      const next = { ...fichaPatient, ...updates };
+      const nextMeasurement = resolveMeasurementForPlanDate(next.measurements, date);
+      const nextTargets = buildMacroTargetsFromPatient(next, nextMeasurement, targetCalUrl);
+      setPatientRecord(next);
+      setResolvedPatientName(next.full_name || patientNameUrl || "Paciente");
+      setMacros(nextTargets);
+      setTargetCalories(nextTargets.calories);
+      return true;
+    }
+
     const { data, error } = await supabase
       .from("patients")
       .update(updates)
@@ -632,7 +654,7 @@ export default function DietCreator() {
         description: error.message || "Intenta nuevamente.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
     const nextMeasurement = resolveMeasurementForPlanDate(data.measurements, date);
@@ -641,7 +663,8 @@ export default function DietCreator() {
     setResolvedPatientName(buildPatientDisplayName(data) || patientNameUrl || "Paciente");
     setMacros(nextTargets);
     setTargetCalories(nextTargets.calories);
-  }, [date, patientId, patientNameUrl, targetCalUrl]);
+    return true;
+  }, [date, fichaPatient, isSessionPatient, patientId, patientNameUrl, targetCalUrl, updateFichaPatient]);
 
   const handleCloseMacroEditor = async () => {
     if (macroAutosaveRef.current) {

@@ -62,6 +62,7 @@ export const REPORT_CSS = `
   .dot-red     { background: #ff5c57; }
   .dot-amber   { background: #f59e0b; }
   .dot-sky     { background: #0ea5e9; }
+  .dot-slate   { background: #64748b; }
 
   .hero {
     display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;

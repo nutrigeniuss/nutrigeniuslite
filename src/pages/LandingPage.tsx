@@ -38,10 +38,25 @@ const FEATURES = [
 
 const waHref = `https://wa.me/${LITE_PAYMENT.whatsappNotify}`;
 
-/** Mockup estático de la ficha — ancla visual del producto (estilo Fitia). */
+const HERO_SHOTS = [
+  {
+    src: '/landing/resultados-adulto.png',
+    alt: 'Resultados de antropometría: IMC, grasa y riesgo por perímetros',
+  },
+  {
+    src: '/landing/resultados-pediatrico.png',
+    alt: 'Evaluación pediátrica OMS con z-scores e indicadores',
+  },
+  {
+    src: '/landing/resultados-gestante.png',
+    alt: 'Evaluación de la gestante: ganancia de peso e IMC pregestacional',
+  },
+] as const;
+
+/** Capturas reales de Resultados — ancla visual del producto. */
 function AppMockup() {
   return (
-    <div className="landing-mockup relative mx-auto w-full max-w-[380px] lg:max-w-none">
+    <div className="landing-mockup relative mx-auto w-full max-w-[440px] lg:max-w-none">
       <div
         className="absolute -inset-8 -z-10 rounded-[40px] opacity-80 blur-2xl"
         style={{
@@ -50,8 +65,22 @@ function AppMockup() {
         }}
         aria-hidden
       />
-      <div className="overflow-hidden rounded-[28px] border border-white/80 bg-white/95 shadow-[0_28px_60px_-20px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/60 backdrop-blur">
-        {/* Chrome falso */}
+
+      {/* Shot secundaria (pediátrico) — profundidad Fitia */}
+      <div className="pointer-events-none absolute -right-3 top-8 hidden w-[58%] rotate-[2.5deg] sm:block lg:-right-6 lg:top-10">
+        <div className="landing-shot-back overflow-hidden rounded-[20px] border border-white/90 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.45)] ring-1 ring-slate-200/70">
+          <img
+            src={HERO_SHOTS[1].src}
+            alt=""
+            className="block h-auto w-full object-cover object-top"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+      </div>
+
+      {/* Shot principal (adulto) */}
+      <div className="relative z-[1] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_28px_60px_-20px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/60">
         <div className="flex items-center gap-1.5 border-b border-slate-100 bg-[#fafbfd] px-4 py-3">
           <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
           <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
@@ -60,59 +89,24 @@ function AppMockup() {
             nutrigeniuslite.app
           </span>
         </div>
+        <img
+          src={HERO_SHOTS[0].src}
+          alt={HERO_SHOTS[0].alt}
+          className="block h-auto w-full"
+          loading="eager"
+          decoding="async"
+        />
+      </div>
 
-        <div className="space-y-3 p-4 sm:p-5">
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              ['Edad', '6 a 7 m'],
-              ['Sexo', 'F'],
-              ['Peso', '22.4 kg'],
-              ['Talla', '118 cm'],
-            ].map(([label, value]) => (
-              <span
-                key={label}
-                className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200/80"
-              >
-                <span className="text-slate-400">{label}</span>
-                <span className="tabular-nums text-slate-800">{value}</span>
-              </span>
-            ))}
-          </div>
-
-          <div className="overflow-hidden rounded-[16px] border border-brand-200/70 shadow-[0_8px_24px_rgba(59,95,235,0.08)]">
-            <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-white">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/75">Resultados</p>
-              <p className="text-[13px] font-bold">Evaluación pediátrica</p>
-              <p className="text-[10px] text-white/85">Estándar OMS · edad: 6 años 7 meses</p>
-            </div>
-            <div className="grid gap-2.5 bg-white p-3 sm:grid-cols-2">
-              <div className="relative overflow-hidden rounded-[12px] border border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 to-white p-3">
-                <span className="absolute inset-y-0 left-0 w-1 bg-emerald-500" aria-hidden />
-                <p className="pl-1.5 text-[9px] font-bold uppercase tracking-wide text-slate-500">IMC para la edad</p>
-                <p className="mt-1 pl-1.5 text-[22px] font-extrabold tabular-nums text-emerald-700">15.80</p>
-                <span className="mt-2 inline-flex rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white">
-                  Normal
-                </span>
-              </div>
-              <div className="relative overflow-hidden rounded-[12px] border border-orange-200/80 bg-gradient-to-br from-orange-50/90 to-white p-3">
-                <span className="absolute inset-y-0 left-0 w-1 bg-orange-500" aria-hidden />
-                <p className="pl-1.5 text-[9px] font-bold uppercase tracking-wide text-slate-500">Talla para la edad</p>
-                <p className="mt-1 pl-1.5 text-[22px] font-extrabold tabular-nums text-orange-800">118.00</p>
-                <span className="mt-2 inline-flex rounded-full bg-orange-500 px-2.5 py-1 text-[10px] font-bold text-white">
-                  Evaluar
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <div className="h-2 flex-1 rounded-full bg-brand-500/20">
-              <div className="h-2 w-2/3 rounded-full bg-brand-500" />
-            </div>
-            <div className="h-2 flex-1 rounded-full bg-slate-100" />
-            <div className="h-2 flex-1 rounded-full bg-slate-100" />
-          </div>
-        </div>
+      {/* Shot flotante (gestante) */}
+      <div className="landing-shot-float absolute -bottom-6 left-0 z-[2] w-[78%] overflow-hidden rounded-[18px] border border-white shadow-[0_20px_44px_-16px_rgba(15,23,42,0.4)] ring-1 ring-slate-200/80 sm:-left-3 sm:w-[68%] lg:-bottom-8">
+        <img
+          src={HERO_SHOTS[2].src}
+          alt={HERO_SHOTS[2].alt}
+          className="block h-auto w-full"
+          loading="eager"
+          decoding="async"
+        />
       </div>
     </div>
   );
@@ -188,7 +182,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="landing-rise landing-mockup-wrap" style={{ animationDelay: '140ms' }}>
+            <div className="landing-rise landing-mockup-wrap pb-10 sm:pb-14" style={{ animationDelay: '140ms' }}>
               <AppMockup />
             </div>
           </section>

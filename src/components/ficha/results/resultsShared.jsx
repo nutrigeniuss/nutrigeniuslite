@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { AlertTriangle, Baby, HeartPulse, Layers, PieChart, Scale, Sparkles } from "lucide-react";
+import { Activity, AlertTriangle, Baby, HeartPulse, Layers, PieChart, Scale, Sparkles } from "lucide-react";
 import { formatCalc } from "@/lib/formatCalc";
 
 // Primitivos compartidos por las secciones de ResultsTab (badges de severidad,
@@ -172,6 +172,7 @@ const SECTION_STYLE = {
   blue:   { chip: "bg-sky-50 text-sky-600",      Icon: Layers },     // pliegues
   orange: { chip: "bg-amber-50 text-amber-600",  Icon: PieChart },   // composición corporal
   rose:   { chip: "bg-[#fce7f3] text-[#ec4899]", Icon: Baby },       // gestación
+  slate:  { chip: "bg-slate-100 text-slate-600", Icon: Activity },   // bioimpedancia (espejo del equipo)
 };
 
 export function SectionCard({ title, color = "teal", children }) {

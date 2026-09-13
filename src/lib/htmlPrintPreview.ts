@@ -1,6 +1,11 @@
 /**
  * Vista previa de impresión HTML (iframe) antes de abrir el diálogo del navegador.
  * Misma idea que DietPrintView: ver el documento → Imprimir / Guardar PDF → Cerrar.
+ *
+ * Importante (producción / Vercel):
+ * - Un iframe con `blob:` queda bloqueado si CSP no incluye `frame-src blob:`
+ *   (cae a `default-src 'self'`). Eso muestra el icono de documento roto.
+ * - `srcdoc` carga el HTML en el mismo origen y no depende de blob.
  */
 
 const OVERLAY_ID = 'nutrigenius-html-print-preview';
@@ -29,8 +34,6 @@ export function openHtmlPrintPreview({
   title = 'Vista previa del reporte',
   downloadName = 'reporte.html',
 }: OpenHtmlPrintPreviewOptions): boolean {
-  let blobUrl: string | null = null;
-
   try {
     removeExistingOverlay();
 
@@ -163,18 +166,12 @@ export function openHtmlPrintPreview({
       throw new Error('No se pudo crear la vista previa');
     }
 
-    // Blob URL es más fiable que srcdoc en algunos WebView/Android.
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    blobUrl = URL.createObjectURL(blob);
-    iframe.src = blobUrl;
+    // srcdoc: mismo origen, no lo bloquea CSP default-src (a diferencia de blob:).
+    iframe.srcdoc = html;
 
     const close = () => {
       overlay.remove();
       document.removeEventListener('keydown', onKey);
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-        blobUrl = null;
-      }
     };
 
     const onKey = (event: KeyboardEvent) => {
@@ -216,7 +213,6 @@ export function openHtmlPrintPreview({
     setTimeout(resizeIframe, 50);
     return true;
   } catch {
-    if (blobUrl) URL.revokeObjectURL(blobUrl);
     try {
       const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);

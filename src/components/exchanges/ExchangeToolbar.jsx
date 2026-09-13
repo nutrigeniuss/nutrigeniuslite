@@ -68,7 +68,7 @@ function MobileActionsMenu({
               className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               <SlidersHorizontal className="h-4 w-4 text-slate-500" />
-              Macronutrientes
+              Editar macros
             </button>
           ) : null}
         </div>
@@ -157,7 +157,7 @@ export default function ExchangeToolbar({
               className="flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[29px] sm:min-h-0"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
-              Macronutrientes
+              Editar macros
             </button>
           ) : null}
 

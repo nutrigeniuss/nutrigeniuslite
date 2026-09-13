@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 
 // Inputs reutilizables del editor de dieta. Los usan tanto el buscador de
@@ -74,30 +75,37 @@ export function DeferredNumberInput({ value, onCommit, min, step, className, tit
 // Dropdown personalizado para elegir unidad (gramos, Unidad pequeña, etc.).
 // Reemplaza al `<select>` nativo para tener una UI consistente y amigable
 // con tarjetas, hover y check sobre la opción activa.
-// Usa position: fixed para que el panel se superponga por encima de cualquier
-// contenedor con overflow-hidden (la card del meal lo es).
+//
+// El menú se porta a document.body: el modal de búsqueda anima con
+// `transform` (ng-sheet-enter), y eso convierte `position:fixed` en coords
+// del modal — el menú quedaba flotando lejos del botón "gramos".
 export function UnitSelect({ options, value, onChange, ariaLabel }) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 180 });
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Calcula la posición del menú a partir del trigger en coords. de viewport.
   const updatePosition = useCallback(() => {
     const el = triggerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
+    const width = Math.max(rect.width, 180);
+    const preferredLeft = rect.left;
+    const maxLeft = Math.max(8, window.innerWidth - width - 8);
     setMenuPos({
       top: rect.bottom + 4,
-      left: rect.left,
-      width: Math.max(rect.width, 180),
+      left: Math.min(preferredLeft, maxLeft),
+      width,
     });
   }, []);
 
-  // Recalcular posición al abrir y cerrar al hacer clic/scroll fuera.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     updatePosition();
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open) return;
     const handleClickOutside = (event) => {
       if (
         triggerRef.current && !triggerRef.current.contains(event.target) &&
@@ -106,7 +114,7 @@ export function UnitSelect({ options, value, onChange, ariaLabel }) {
         setOpen(false);
       }
     };
-    const handleReposition = () => setOpen(false); // evitar menú "flotante" al hacer scroll
+    const handleReposition = () => setOpen(false);
     document.addEventListener("mousedown", handleClickOutside);
     window.addEventListener("scroll", handleReposition, true);
     window.addEventListener("resize", handleReposition);
@@ -115,9 +123,46 @@ export function UnitSelect({ options, value, onChange, ariaLabel }) {
       window.removeEventListener("scroll", handleReposition, true);
       window.removeEventListener("resize", handleReposition);
     };
-  }, [open, updatePosition]);
+  }, [open]);
 
   const current = options[value] || options[0];
+
+  const menu = open ? (
+    <ul
+      ref={menuRef}
+      role="listbox"
+      style={{
+        position: "fixed",
+        top: menuPos.top,
+        left: menuPos.left,
+        minWidth: menuPos.width,
+        zIndex: 100050,
+      }}
+      className="max-w-[260px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/15"
+    >
+      {options.map((option, index) => {
+        const isActive = index === value;
+        return (
+          <li key={`${option.label}-${index}`}>
+            <button
+              type="button"
+              role="option"
+              aria-selected={isActive}
+              onClick={() => { onChange(index); setOpen(false); }}
+              className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs transition ${
+                isActive
+                  ? "bg-sky-50 text-sky-700 font-semibold"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <span className="truncate">{option.label}</span>
+              {isActive ? <Check className="w-3.5 h-3.5 flex-shrink-0 text-sky-600" /> : null}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  ) : null;
 
   return (
     <div className="relative inline-block">
@@ -138,41 +183,7 @@ export function UnitSelect({ options, value, onChange, ariaLabel }) {
         <ChevronDown className={`w-3 h-3 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open ? (
-        <ul
-          ref={menuRef}
-          role="listbox"
-          style={{
-            position: "fixed",
-            top: menuPos.top,
-            left: menuPos.left,
-            minWidth: menuPos.width,
-          }}
-          className="z-[60] max-w-[260px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/15"
-        >
-          {options.map((option, index) => {
-            const isActive = index === value;
-            return (
-              <li key={`${option.label}-${index}`}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={isActive}
-                  onClick={() => { onChange(index); setOpen(false); }}
-                  className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs transition ${
-                    isActive
-                      ? "bg-sky-50 text-sky-700 font-semibold"
-                      : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <span className="truncate">{option.label}</span>
-                  {isActive ? <Check className="w-3.5 h-3.5 flex-shrink-0 text-sky-600" /> : null}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
+      {menu && typeof document !== "undefined" ? createPortal(menu, document.body) : null}
     </div>
   );
 }

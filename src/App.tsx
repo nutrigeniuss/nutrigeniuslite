@@ -1,7 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { FichaProvider } from '@/lib/FichaContext';
 import { queryClientInstance } from '@/lib/query-client';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
@@ -47,6 +48,17 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
   return children;
 }
 
+/** Ficha de sesión compartida entre calculadora y editores de dieta. */
+function ProtectedFichaLayout() {
+  return (
+    <Protected>
+      <FichaProvider>
+        <Outlet />
+      </FichaProvider>
+    </Protected>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClientInstance}>
@@ -56,13 +68,15 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/app" element={<Protected><CalculatorPage /></Protected>} />
+            <Route element={<ProtectedFichaLayout />}>
+              <Route path="/app" element={<CalculatorPage />} />
+              <Route path="/DietCreator" element={<DietCreator />} />
+              <Route path="/ExchangeDietCreator" element={<ExchangeDietCreator />} />
+            </Route>
             <Route path="/MyFoods" element={<Protected><MyFoods /></Protected>} />
             <Route path="/alimentos" element={<Navigate to="/MyFoods" replace />} />
             <Route path="/admin" element={<AdminOnly><AdminAccessPage /></AdminOnly>} />
             <Route path="/admin/alimentos" element={<AdminOnly><FoodsCatalogPage /></AdminOnly>} />
-            <Route path="/DietCreator" element={<Protected><DietCreator /></Protected>} />
-            <Route path="/ExchangeDietCreator" element={<Protected><ExchangeDietCreator /></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
