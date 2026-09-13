@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { DietMeal, DietPlan } from '../patient/patientDietTypes';
+import type { DietMeal, DietPlan } from '@/components/ficha/diet/patientDietTypes';
 import BackLink from '@/components/ui/back-link';
 import { formatWeekRange, shiftWeek, todayLocalDateStr, weekRangeOf } from '@/lib/weekRange';
 import { publicSiteLabel } from '@/lib/publicSite';
@@ -21,7 +22,6 @@ type WeeklyPrintViewProps = {
   patientName?: string;
   weekStartDate?: string;
   onClose: () => void;
-  // Marca del nutricionista para personalizar el PDF.
   brandLogoUrl?: string | null;
   brandName?: string | null;
 };
@@ -39,14 +39,19 @@ function MealItems({ meal }: MealItemsProps) {
 
   return (
     <div className="mb-2">
-      <p className="text-[10px] font-bold text-brand-500 uppercase tracking-wide mb-0.5">{meal.name}</p>
-      {meal.items.map((item, index) => (
-        <p key={item.id || `${item.name || 'item'}-${index}`} className="text-[10px] text-slate-600 leading-snug">
-          {item.name}
-          {item.unit ? `, ${item.unit}` : ''}
-        </p>
-      ))}
-      {meal.notes ? <p className="text-[9px] italic text-slate-400 mt-0.5">{meal.notes}</p> : null}
+      <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-500">{meal.name}</p>
+      {meal.items.map((item, index) => {
+        const qty = item.quantity != null ? String(item.quantity) : '';
+        const unit = (item.unit || '').trim();
+        const amount = qty && unit ? `${qty} ${unit}` : qty || unit;
+        return (
+          <p key={item.id || `${item.name || 'item'}-${index}`} className="text-[10px] leading-snug text-slate-600">
+            {item.name}
+            {amount ? `, ${amount}` : ''}
+          </p>
+        );
+      })}
+      {meal.notes ? <p className="mt-0.5 text-[9px] italic text-slate-400">{meal.notes}</p> : null}
     </div>
   );
 }
@@ -59,15 +64,15 @@ function DayColumn({ dateStr, plans, dayLabel }: DayColumnProps) {
   );
 
   return (
-    <div className="border-r border-slate-200 last:border-r-0 px-1.5 py-2 min-h-full">
-      <div className="text-center mb-2 pb-1 border-b border-[#c7d3fd]">
+    <div className="weekly-day-col min-h-full border-r border-slate-200 px-1.5 py-2 last:border-r-0">
+      <div className="mb-2 border-b border-[#c7d3fd] pb-1 text-center">
         <p className="text-[11px] font-bold text-slate-700">{dayLabel}</p>
         <p className="text-[9px] text-slate-400">{dateStr.slice(8)}/{dateStr.slice(5, 7)}</p>
-        {totalCal > 0 ? <p className="text-[9px] font-semibold text-brand-500 mt-0.5">{Math.round(totalCal)} kcal</p> : null}
+        {totalCal > 0 ? <p className="mt-0.5 text-[9px] font-semibold text-brand-500">{Math.round(totalCal)} kcal</p> : null}
       </div>
 
       {plans.length === 0 ? (
-        <p className="text-[9px] text-slate-300 text-center italic">Sin dieta</p>
+        <p className="text-center text-[9px] italic text-slate-300">Sin dieta</p>
       ) : (
         allMeals.map((meal, index) => <MealItems key={meal.id || `${meal.name || 'meal'}-${index}`} meal={meal} />)
       )}
@@ -75,19 +80,19 @@ function DayColumn({ dateStr, plans, dayLabel }: DayColumnProps) {
   );
 }
 
-export default function WeeklyPrintView({ dietPlans, patientName, weekStartDate, onClose, brandLogoUrl, brandName }: WeeklyPrintViewProps) {
+export default function WeeklyPrintView({
+  dietPlans,
+  patientName,
+  weekStartDate,
+  onClose,
+  brandLogoUrl,
+  brandName,
+}: WeeklyPrintViewProps) {
   const handlePrint = (): void => {
     window.print();
   };
 
-  // La semana que se está viendo. Arranca en la que traiga el llamador (la del
-  // día seleccionado en el calendario) y desde aquí se puede mover sin cerrar
-  // la vista previa: antes, para ver otra semana había que salir, elegir otro
-  // día y volver a entrar — y ni eso funcionaba, porque el ancla se descartaba.
   const [anchorDate, setAnchorDate] = useState<string>(weekStartDate || todayLocalDateStr());
-
-  // Lunes a domingo y en hora local (ver lib/weekRange): con toISOString, un
-  // domingo por la noche en Perú ya contaba como lunes y salía otra semana.
   const week = weekRangeOf(anchorDate);
 
   const days: WeekDayPlan[] = week.days.map((dateStr, index) => ({
@@ -100,40 +105,67 @@ export default function WeeklyPrintView({ dietPlans, patientName, weekStartDate,
   const weekLabel = formatWeekRange(week);
   const patientBadge = patientName?.split(' ').slice(0, 2).join(' ') || 'Paciente';
 
-  return (
+  return createPortal(
     <>
       <style>{`
+        /* Misma idea que DietPrintView: portal a body + excluir el overlay
+           del body > * { display:none }. Si no, #root se oculta y el PDF sale en blanco. */
         @media print {
-          body > * { display: none !important; }
-          .weekly-print-overlay { display: block !important; position: fixed !important; inset: 0; background: white; z-index: 99999; overflow: visible !important; }
+          body > *:not(.weekly-print-overlay) { display: none !important; }
+          html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          .weekly-print-overlay {
+            display: block !important;
+            position: static !important;
+            inset: auto !important;
+            background: white !important;
+            backdrop-filter: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            z-index: auto !important;
+          }
           .no-print { display: none !important; }
+          .weekly-print-sheet {
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+          .weekly-print-scroll {
+            overflow: visible !important;
+          }
+          .weekly-print-grid {
+            min-width: 0 !important;
+            width: 100% !important;
+          }
+          .weekly-day-col {
+            min-width: 0 !important;
+            overflow: visible !important;
+          }
           @page { margin: 1cm 1.2cm; size: A4 landscape; }
-          .print-table { font-size: 9px; }
-        }
-        @media screen {
-          .weekly-print-overlay { display: flex; }
         }
       `}</style>
 
-      <div className="weekly-print-overlay fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm items-start justify-center overflow-y-auto py-8">
-        <div className="no-print fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3">
+      <div className="weekly-print-overlay fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 py-8 backdrop-blur-sm">
+        <div className="no-print fixed left-0 right-0 top-0 z-50 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-3 shadow-sm sm:gap-3 sm:px-6">
           <BackLink onClick={onClose} label="Cerrar vista previa" variant="overlay-close" compact />
-          <div className="flex-1" />
 
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => setAnchorDate((current) => shiftWeek(current, -1))}
               aria-label="Semana anterior"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:border-brand-500/40 hover:text-brand-500"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:border-brand-500/40 hover:text-brand-500"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            <div className="min-w-[210px] text-center" aria-live="polite">
-              <p className="text-sm font-semibold text-slate-700">{weekLabel}</p>
-              {/* Cuántos días llevan dieta, para no mandar a imprimir una hoja
-                  en blanco sin darse cuenta. */}
+            <div className="min-w-0 text-center" aria-live="polite">
+              <p className="truncate text-sm font-semibold text-slate-700">{weekLabel}</p>
               <p className="text-[11px] text-slate-400">
                 {daysWithPlan === 0
                   ? 'Ningún día con dieta'
@@ -145,7 +177,7 @@ export default function WeeklyPrintView({ dietPlans, patientName, weekStartDate,
               type="button"
               onClick={() => setAnchorDate((current) => shiftWeek(current, 1))}
               aria-label="Semana siguiente"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:border-brand-500/40 hover:text-brand-500"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:border-brand-500/40 hover:text-brand-500"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -159,18 +191,19 @@ export default function WeeklyPrintView({ dietPlans, patientName, weekStartDate,
             </button>
           </div>
 
-          <div className="flex-1" />
           <button
+            type="button"
             onClick={handlePrint}
-            className="flex items-center gap-2 text-sm font-semibold bg-brand-500 hover:bg-brand-600 text-white px-5 py-2 rounded-xl shadow transition-colors"
+            className="ml-auto flex min-h-11 touch-manipulation items-center gap-2 rounded-xl bg-brand-500 px-3 py-2 text-sm font-semibold text-white shadow transition-colors hover:bg-brand-600 sm:px-5"
           >
-            🖨️ Imprimir / Guardar PDF
+            🖨️ <span className="sm:hidden">PDF</span><span className="hidden sm:inline">Imprimir / Guardar PDF</span>
           </button>
         </div>
 
-        <div className="mt-16 no-print" />
+        <div className="mt-20 no-print sm:mt-16" />
 
-        <div className="bg-white shadow-2xl rounded-2xl mx-auto print-table" style={{ width: '270mm', minHeight: '190mm', padding: '12mm 10mm', boxSizing: 'border-box' }}>
+        {/* En pantalla: scroll horizontal en móvil. En impresión: hoja ancha A4 landscape. */}
+        <div className="weekly-print-sheet mx-auto box-border max-w-[calc(100vw-1.5rem)] rounded-2xl bg-white p-4 shadow-2xl sm:p-6 md:w-[270mm] md:min-h-[190mm] md:max-w-none md:px-[10mm] md:py-[12mm]">
           <div className="relative mb-5">
             <div
               className="h-14 w-full"
@@ -181,8 +214,8 @@ export default function WeeklyPrintView({ dietPlans, patientName, weekStartDate,
             />
             <div className="absolute inset-0 flex items-center px-5">
               <div>
-                <p className="text-white text-[10px] font-medium opacity-80">Plan Alimentario Semanal</p>
-                <p className="text-white font-bold text-sm">{patientName}</p>
+                <p className="text-[10px] font-medium text-white opacity-80">Plan Alimentario Semanal</p>
+                <p className="text-sm font-bold text-white">{patientName}</p>
               </div>
             </div>
             <div className="absolute right-4 top-0.5 flex flex-col items-center">
@@ -190,31 +223,41 @@ export default function WeeklyPrintView({ dietPlans, patientName, weekStartDate,
                 <img
                   src={brandLogoUrl}
                   alt={brandName || 'Logo de la clínica'}
-                  className="w-12 h-12 rounded-lg object-contain bg-white border border-[#c7d3fd] p-1"
+                  className="h-12 w-12 rounded-lg border border-[#c7d3fd] bg-white object-contain p-1"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-slate-100 border-2 border-[#7d93f7] flex items-center justify-center">
-                  <span className="text-slate-400 text-[9px] font-bold text-center leading-tight px-1">{patientBadge}</span>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#7d93f7] bg-slate-100">
+                  <span className="px-1 text-center text-[9px] font-bold leading-tight text-slate-400">{patientBadge}</span>
                 </div>
               )}
-              {brandName ? <p className="text-[8px] text-slate-500 mt-0.5 font-semibold text-center max-w-[80px] leading-tight">{brandName}</p> : null}
+              {brandName ? (
+                <p className="mt-0.5 max-w-[80px] text-center text-[8px] font-semibold leading-tight text-slate-500">{brandName}</p>
+              ) : null}
             </div>
           </div>
 
-          <p className="text-sm text-slate-500 font-medium mb-4">{weekLabel}</p>
+          <p className="mb-4 text-sm font-medium text-slate-500">{weekLabel}</p>
 
-          <div className="grid grid-cols-7 border border-slate-200 rounded-xl overflow-hidden" style={{ minHeight: '120mm' }}>
-            {days.map((day) => (
-              <DayColumn key={day.dateStr} dateStr={day.dateStr} plans={day.plans} dayLabel={day.label} />
-            ))}
+          <div className="weekly-print-scroll -mx-1 overflow-x-auto pb-1">
+            <div
+              className="weekly-print-grid grid grid-cols-7 overflow-hidden rounded-xl border border-slate-200"
+              style={{ minWidth: '980px', minHeight: '120mm' }}
+            >
+              {days.map((day) => (
+                <DayColumn key={day.dateStr} dateStr={day.dateStr} plans={day.plans} dayLabel={day.label} />
+              ))}
+            </div>
           </div>
 
-          <div className="mt-4 pt-2 border-t border-slate-200 flex justify-between items-center">
-            <p className="text-[9px] text-slate-400">Generado por {brandName || 'NutriGenius'} · {new Date().toLocaleDateString(getCurrentLocale())}</p>
-            {publicSiteLabel() ? <p className="text-[9px] text-brand-500 font-medium">{publicSiteLabel()}</p> : null}
+          <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-2">
+            <p className="text-[9px] text-slate-400">
+              Generado por {brandName || 'NutriGenius'} · {new Date().toLocaleDateString(getCurrentLocale())}
+            </p>
+            {publicSiteLabel() ? <p className="text-[9px] font-medium text-brand-500">{publicSiteLabel()}</p> : null}
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
