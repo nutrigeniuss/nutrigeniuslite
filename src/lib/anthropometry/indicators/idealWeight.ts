@@ -143,7 +143,7 @@ export const percentIdealWeight = (
     return { value: null, missing };
   }
 
-  const percent = round((currentWeightKg / idealWeightKg) * 100, 1);
+  const percent = round((currentWeightKg / idealWeightKg) * 100, 2);
 
   // Los tramos se escriben de menor a mayor y sin huecos: cada valor cae en uno
   // y solo uno. Con "≥120 obesidad" y "110-120 sobrepeso" escritos tal cual,

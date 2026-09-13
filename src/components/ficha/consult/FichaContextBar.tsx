@@ -295,7 +295,7 @@ export default function FichaContextBar({
                 onChange={(e) => setDown(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-300 text-brand-500"
               />
-              Síndrome de Down (cartas Zemel)
+              Síndrome de Down · Zemel (2015)
             </label>
           ) : null}
 

@@ -16,6 +16,7 @@ import {
   imcObjetivoPara,
 } from "@/lib/anthropometry";
 import { MissingAlert, SectionCard, SEVERITY_CLASS, v } from "./resultsShared";
+import { formatCalc } from '@/lib/formatCalc';
 import { getCurrentLocale } from '@/lib/formatLocale';
 
 // Días entre dos fechas 'YYYY-MM-DD' (o hasta hoy si falta la segunda).
@@ -154,7 +155,7 @@ export default function PesoSection({ data, sex, ageYears, patient, onSetField }
         {bmi.value != null ? (
           <>
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-extrabold text-brand-500 tabular-nums">{bmi.value.toFixed(1)}</span>
+              <span className="text-3xl font-extrabold text-brand-500 tabular-nums">{formatCalc(bmi.value)}</span>
               <span className="text-xs text-slate-400 font-medium">kg/m²</span>
               <span className={`text-xs font-bold px-3 py-1 rounded-full ${SEVERITY_CLASS[bmi.severity] || SEVERITY_CLASS.info}`}>
                 {bmi.classification}
@@ -374,7 +375,7 @@ export default function PesoSection({ data, sex, ageYears, patient, onSetField }
                 </span>
               ) : null}
               <span className="text-lg font-bold text-brand-500 tabular-nums whitespace-nowrap">
-                {Math.abs(weightChange.value).toFixed(1)} %
+                {Math.abs(weightChange.value).toFixed(2)} %
               </span>
             </div>
           )}

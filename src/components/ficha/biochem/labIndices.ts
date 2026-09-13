@@ -92,7 +92,8 @@ const GROUP_INSULIN = 'Resistencia a la insulina';
 const GROUP_CARDIO = 'Riesgo cardiovascular';
 
 const round = (value: number, decimals: number): number => {
-  const factor = 10 ** decimals;
+  const d = Math.min(Math.max(0, decimals), 2);
+  const factor = 10 ** d;
   return Math.round(value * factor) / factor;
 };
 
@@ -215,7 +216,7 @@ const buildNRI: Builder = (values, entry, context) => {
     label: 'Índice de Riesgo Nutricional (NRI)',
     group: GROUP_NUTRITIONAL,
     value,
-    decimals: 1,
+    decimals: 2,
     formula,
     band: classify(value, bands),
     bands,
@@ -260,7 +261,7 @@ const buildGNRI: Builder = (values, entry, context) => {
       const ratio = Math.min(weight.value / ideal, 1);
       const raw = 1.489 * albuminGL + 41.7 * ratio;
       value = round(raw, 1);
-      formula = `1.489 × ${round(albuminGL, 1)} g/L + 41.7 × ${round(ratio, 3)} = ${value} · peso ideal (Lorentz) ${round(ideal, 1)} kg`;
+      formula = `1.489 × ${round(albuminGL, 2)} g/L + 41.7 × ${round(ratio, 2)} = ${value} · peso ideal (Lorentz) ${round(ideal, 2)} kg`;
     }
   }
 
@@ -269,7 +270,7 @@ const buildGNRI: Builder = (values, entry, context) => {
     label: 'Índice de Riesgo Nutricional Geriátrico (GNRI)',
     group: GROUP_NUTRITIONAL,
     value,
-    decimals: 1,
+    decimals: 2,
     formula,
     band: classify(value, bands),
     bands,
@@ -318,7 +319,7 @@ const buildPNI: Builder = (values, entry, context) => {
     label: 'Índice de Pronóstico Nutricional (PNI)',
     group: GROUP_NUTRITIONAL,
     value,
-    decimals: 1,
+    decimals: 2,
     formula,
     band: classify(value, bands),
     bands,
@@ -402,7 +403,7 @@ const buildHomaBeta: Builder = (values, _entry, context) => {
     label: 'HOMA-β',
     group: GROUP_INSULIN,
     value,
-    decimals: 1,
+    decimals: 2,
     formula,
     band: classify(value, bands),
     bands,
@@ -583,8 +584,8 @@ const buildAIP: Builder = (values) => {
   if (triglycerides !== null && hdl !== null && triglycerides > 0 && hdl > 0) {
     const tgMmol = triglycerides / MMOL_TG;
     const hdlMmol = hdl / MMOL_CHOL;
-    value = round(Math.log10(tgMmol / hdlMmol), 3);
-    formula = `log₁₀(${round(tgMmol, 3)} / ${round(hdlMmol, 3)} mmol/L) = ${value}`;
+    value = round(Math.log10(tgMmol / hdlMmol), 2);
+    formula = `log₁₀(${round(tgMmol, 2)} / ${round(hdlMmol, 2)} mmol/L) = ${value}`;
   }
 
   return {
@@ -592,7 +593,7 @@ const buildAIP: Builder = (values) => {
     label: 'Índice Aterogénico del Plasma (AIP)',
     group: GROUP_CARDIO,
     value,
-    decimals: 3,
+    decimals: 2,
     formula,
     band: classify(value, bands),
     bands,

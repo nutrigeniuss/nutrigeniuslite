@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { AlertTriangle, ArrowRight, Info, Pencil, RotateCcw, Scale } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Calculator, Info, Pencil, RotateCcw, Scale } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { formatCalc } from '@/lib/formatCalc';
 import { INDEX_GROUPS, type IndexResult, type IndexTone, type MissingInput } from './labIndices';
 
 type LabIndicesPanelProps = {
@@ -276,8 +277,13 @@ function IndexCard({
   const computed = result.value !== null;
 
   return (
-    <div className="flex h-full flex-col rounded-[1.15rem] border border-slate-200/80 bg-[#fafbfd] p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-2">
+    <div className={`relative flex h-full flex-col overflow-hidden rounded-[1.15rem] border p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)] sm:p-5 ${
+      computed
+        ? 'border-brand-200/70 bg-gradient-to-br from-brand-50/40 via-white to-white'
+        : 'border-slate-200/80 bg-[#fafbfd]'
+    }`}>
+      {computed ? <span className="absolute inset-y-0 left-0 w-1.5 bg-brand-500" aria-hidden /> : null}
+      <div className="flex items-start justify-between gap-2 pl-1">
         <div className="flex min-w-0 items-center gap-1.5">
           <h5 className="truncate text-[13px] font-bold text-slate-800">{result.label}</h5>
           <span title={result.reference} className="cursor-help text-slate-300 transition hover:text-slate-500">
@@ -289,12 +295,12 @@ function IndexCard({
 
       {computed ? (
         <>
-          <div className="mt-2 flex items-end justify-between gap-2">
-            <span className={`text-[26px] font-bold leading-none tabular-nums ${tone?.value ?? 'text-slate-700'}`}>
-              {result.value?.toFixed(result.decimals)}
+          <div className="mt-2.5 flex items-end justify-between gap-2 pl-1">
+            <span className={`text-[30px] font-extrabold leading-none tabular-nums ${tone?.value ?? 'text-slate-800'}`}>
+              {formatCalc(result.value)}
             </span>
             {result.band ? (
-              <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${tone?.chip}`}>
+              <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm ${tone?.chip}`}>
                 {result.band.label}
               </span>
             ) : null}
@@ -391,17 +397,23 @@ export default function LabIndicesPanel({
   const computed = results.filter((result) => result.value !== null).length;
 
   return (
-    <div className="p-5 sm:p-6 lg:p-7">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h4 className="ng-display text-lg font-semibold tracking-tight text-slate-900">Índices calculados</h4>
-          <p className="mt-1 text-sm text-slate-500">
-            {computed} de {results.length} con datos suficientes
-          </p>
+    <div className="overflow-hidden rounded-[18px] border border-brand-200/70 bg-white shadow-[0_10px_28px_rgba(59,95,235,0.08)]">
+      <div className="flex flex-wrap items-end justify-between gap-2 bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3.5 text-white sm:px-6">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white/15 ring-1 ring-white/25">
+            <Calculator className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/75">Resultados</p>
+            <h4 className="text-[16px] font-bold leading-tight">Índices calculados</h4>
+            <p className="text-[11px] text-white/85">
+              {computed} de {results.length} con datos suficientes
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-7">
+      <div className="space-y-7 p-5 sm:p-6 lg:p-7">
         {INDEX_GROUPS.map((group) => {
           const groupResults = results.filter((result) => result.group === group);
           if (groupResults.length === 0) return null;
@@ -426,8 +438,8 @@ export default function LabIndicesPanel({
         })}
       </div>
 
-      <p className="mt-5 text-[11px] text-slate-400">
-        Se recalculan solos al corregir cualquier valor. No se guardan.
+      <p className="border-t border-slate-100 px-5 py-3 text-[11px] text-slate-400 sm:px-6">
+        Se recalculan solos al corregir cualquier valor. No se guardan. Valores con 2 decimales.
       </p>
     </div>
   );

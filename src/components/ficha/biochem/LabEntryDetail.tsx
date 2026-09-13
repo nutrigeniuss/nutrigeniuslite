@@ -251,13 +251,13 @@ export default function LabEntryDetail({
             onClick={() => setActivePanel(INDICES_KEY)}
             className={`flex min-h-11 flex-shrink-0 touch-manipulation items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-left text-[13px] font-semibold transition-all sm:gap-2.5 sm:text-sm lg:w-full lg:flex-shrink ${
               showingIndices
-                ? 'bg-brand-500 text-white shadow-[0_8px_18px_rgba(59,95,235,0.28)]'
-                : 'text-slate-500 hover:bg-white hover:text-slate-800'
+                ? 'bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-[0_10px_22px_rgba(59,95,235,0.35)] ring-2 ring-brand-300/50'
+                : 'bg-brand-50 text-brand-700 ring-1 ring-brand-200/80 hover:bg-brand-100'
             }`}
           >
-            <Calculator className={`h-3.5 w-3.5 flex-shrink-0 ${showingIndices ? 'text-white/90' : 'text-slate-300'}`} />
+            <Calculator className={`h-3.5 w-3.5 flex-shrink-0 ${showingIndices ? 'text-white/90' : 'text-brand-500'}`} />
             <span className="truncate lg:flex-1">Índices calculados</span>
-            <span className={`text-[10px] font-bold tabular-nums ${showingIndices ? 'text-white/80' : 'text-slate-400'}`}>
+            <span className={`text-[10px] font-bold tabular-nums ${showingIndices ? 'text-white/80' : 'text-brand-500'}`}>
               {indices.length - pendingIndices}/{indices.length}
             </span>
           </button>

@@ -21,6 +21,7 @@ import {
   type TrajectoryPoint,
   type ZemelPublicIndicator,
 } from '@/lib/anthropometry/pediatric';
+import { formatCalc } from '@/lib/formatCalc';
 
 // Curva de crecimiento con el ESTILO OFICIAL de la OMS: líneas SD verde (mediana),
 // roja (±2) y negra (±3) con sus etiquetas al borde derecho, eje Y a ambos lados
@@ -191,7 +192,7 @@ export default function PediatricGrowthChart({
                   <div className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[10px] shadow-sm">
                     <div className="text-slate-500">{isAge ? 'Edad' : 'Talla'}: {ageText}</div>
                     <div className="font-bold" style={{ color: BRAND_BLUE }}>
-                      {measure.label}: {raw.value}{measure.unit}
+                      {measure.label}: {formatCalc(Number(raw.value))}{measure.unit}
                     </div>
                   </div>
                 );

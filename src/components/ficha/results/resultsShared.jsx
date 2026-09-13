@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
-import { AlertTriangle, Baby, HeartPulse, Layers, PieChart, Scale } from "lucide-react";
+import { AlertTriangle, Baby, HeartPulse, Layers, PieChart, Scale, Sparkles } from "lucide-react";
+import { formatCalc } from "@/lib/formatCalc";
 
 // Primitivos compartidos por las secciones de ResultsTab (badges de severidad,
 // avisos de campos faltantes, filas de resultado y tarjetas de sección).
@@ -143,7 +144,9 @@ export function ResultRow({ label, value, unit, diag, diagColor, missing, detail
         ) : (
           <>
             <span className="min-w-[56px] text-right text-base font-extrabold tabular-nums text-slate-900">
-              {value !== null && value !== undefined ? value : "—"}
+              {value !== null && value !== undefined
+                ? (typeof value === "number" ? formatCalc(value) : value)
+                : "—"}
               {value !== null && value !== undefined && unit ? (
                 <span className="ml-1 text-xs font-semibold text-slate-400">{unit}</span>
               ) : null}
@@ -175,14 +178,18 @@ export function SectionCard({ title, color = "teal", children }) {
   const style = SECTION_STYLE[color] || SECTION_STYLE.teal;
   const Icon = style.Icon;
   return (
-    <div className="rounded-[1.5rem] border border-slate-200/80 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-5">
-      <div className="mb-4 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${style.chip}`}>
+    <div className="overflow-hidden rounded-[1.5rem] border border-brand-200/60 bg-white shadow-[0_10px_28px_rgba(59,95,235,0.07)]">
+      <div className="flex items-center gap-2.5 bg-gradient-to-r from-brand-500/10 via-brand-50 to-transparent px-4 py-3 sm:px-5">
+        <span className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ring-brand-200/60 ${style.chip}`}>
           <Icon className="h-4 w-4" />
         </span>
-        <h4 className="text-sm font-bold text-slate-900">{title}</h4>
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-500">Resultados</p>
+          <h4 className="text-sm font-bold text-slate-900">{title}</h4>
+        </div>
+        <Sparkles className="ml-auto hidden h-4 w-4 text-brand-400/70 sm:block" />
       </div>
-      {children}
+      <div className="p-4 sm:p-5">{children}</div>
     </div>
   );
 }

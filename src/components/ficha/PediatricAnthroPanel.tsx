@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Baby, LineChart } from 'lucide-react';
+import { Baby, LineChart, Sparkles } from 'lucide-react';
 import {
   assessPatientMeasurement,
   buildIndicatorTrajectory,
@@ -14,6 +14,7 @@ import {
   type PediatricTone,
   type ZemelPublicIndicator,
 } from '@/lib/anthropometry/pediatric';
+import { formatCalc } from '@/lib/formatCalc';
 import PediatricGrowthChart from './PediatricGrowthChart';
 
 // Panel de resultados antropométricos pediátricos (OMS/MINSA). Se muestra solo
@@ -37,15 +38,58 @@ type PediatricAnthroPanelProps = {
   pathologies?: string | string[] | null;
 };
 
-const TONE_STYLES: Record<PediatricTone, { badge: string; dot: string }> = {
-  normal: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-  caution: { badge: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
-  high: { badge: 'bg-orange-50 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
-  warning: { badge: 'bg-orange-50 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
-  critical: { badge: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' },
+const TONE_STYLES: Record<PediatricTone, { badge: string; dot: string; card: string; accent: string; value: string }> = {
+  normal: {
+    badge: 'bg-emerald-500 text-white',
+    dot: 'bg-white',
+    card: 'border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 to-white',
+    accent: 'bg-emerald-500',
+    value: 'text-emerald-700',
+  },
+  caution: {
+    badge: 'bg-amber-500 text-white',
+    dot: 'bg-white',
+    card: 'border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-white',
+    accent: 'bg-amber-500',
+    value: 'text-amber-800',
+  },
+  high: {
+    badge: 'bg-orange-500 text-white',
+    dot: 'bg-white',
+    card: 'border-orange-200/80 bg-gradient-to-br from-orange-50/90 to-white',
+    accent: 'bg-orange-500',
+    value: 'text-orange-800',
+  },
+  warning: {
+    badge: 'bg-orange-500 text-white',
+    dot: 'bg-white',
+    card: 'border-orange-200/80 bg-gradient-to-br from-orange-50/90 to-white',
+    accent: 'bg-orange-500',
+    value: 'text-orange-800',
+  },
+  critical: {
+    badge: 'bg-rose-500 text-white',
+    dot: 'bg-white',
+    card: 'border-rose-200/80 bg-gradient-to-br from-rose-50/90 to-white',
+    accent: 'bg-rose-500',
+    value: 'text-rose-800',
+  },
 };
 
 const SEVERITY: Record<PediatricTone, number> = { critical: 4, warning: 3, high: 2, caution: 1, normal: 0 };
+
+const MEASURE_UNIT: Record<string, string> = {
+  wfa: ' kg',
+  lhfa: ' cm',
+  hfa: ' cm',
+  wfl: ' kg',
+  wfh: ' kg',
+  bmi: '',
+  hcfa: ' cm',
+  acfa: ' cm',
+  tsfa: ' mm',
+  ssfa: ' mm',
+};
 
 const formatAge = (months: number): string => {
   const totalMonths = Math.floor(months);
@@ -74,11 +118,11 @@ function MiniGauge({ position, band }: { position: number; band?: [number, numbe
   const gEnd = band ? zToPct(band[1]) : 85;
   return (
     <div
-      className="relative mt-2.5 h-1.5 w-full rounded-full"
+      className="relative mt-3 h-2 w-full rounded-full"
       style={{ background: `linear-gradient(90deg,#fecaca 0%,#fecaca ${gStart}%,#bbf7d0 ${gStart}%,#bbf7d0 ${gEnd}%,#fecaca ${gEnd}%,#fecaca 100%)` }}
     >
       <span
-        className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-800 shadow"
+        className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-800 shadow"
         style={{ left: `${Math.max(2, Math.min(98, position))}%` }}
       />
     </div>
@@ -180,95 +224,106 @@ export default function PediatricAnthroPanel({
   // requiere atención sigue apareciendo primero entre las tarjetas.
 
   return (
-    <section className="rounded-[16px] border border-[#e2e8f0]/80 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <section className="overflow-hidden rounded-[18px] border border-brand-200/70 bg-white shadow-[0_10px_28px_rgba(59,95,235,0.08)]">
+      <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-3.5 text-white">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-brand-50 text-brand-500">
-            <Baby className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white/15 ring-1 ring-white/25">
+            <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-[15px] font-bold text-slate-900">Evaluación pediátrica</h3>
-            <p className="text-xs text-slate-500">
-              {isZemel ? 'Referencia: Síndrome de Down (Zemel 2015)' : 'Estándar OMS'} · edad: {ageLabel}
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/75">Resultados</p>
+            <h3 className="text-[16px] font-bold leading-tight">Evaluación pediátrica</h3>
+            <p className="text-[11px] text-white/85">
+              {isZemel ? 'Síndrome de Down · Zemel (2015)' : 'Estándar OMS'} · edad: {ageLabel}
             </p>
           </div>
         </div>
+        <Baby className="hidden h-8 w-8 text-white/35 sm:block" />
       </div>
 
-      {/* Sin titular de síntesis. Repetía en una línea lo que cada indicador ya
-          dice por su cuenta, y con menos información: el titular decía "Bajo
-          peso · Peso para la edad" mientras las tarjetas de abajo dan el
-          diagnóstico, el z-score y el rango normal de los tres a la vez.
-          Ocupaba además la parte alta de la pantalla, que es donde se busca la
-          evaluación y no un resumen de ella. */}
-      <div className="grid gap-2.5 sm:grid-cols-2">
-        {results.map((r) => {
-          const style = TONE_STYLES[r.classification.tone];
-          const pos = gaugePosition(r.zScore, r.percentile);
-          // Rango normal (kg/cm/mm) y banda del medidor: solo para OMS; en Zemel el
-          // resultado es un percentil respecto a la población con Down (no z OMS).
-          const nr = !isZemel && sex && typeof r.chartX === 'number'
-            ? pediatricNormalRange(r.indicator as PediatricIndicator, sex, r.chartX, r.chartValue)
-            : null;
-          const zBand = isZemel ? null : pediatricNormalZBand(r.indicator as PediatricIndicator);
-          return (
-            <div key={r.indicator} className="rounded-[12px] border border-slate-100 bg-slate-50/60 px-4 py-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{r.indicatorLabel}</p>
-                <span className="rounded-md bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 tabular-nums" title="z-score OMS o percentil (Frisancho/Fernández)">
-                  {r.valueLabel}
-                </span>
+      <div className="space-y-4 p-4 sm:p-5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {results.map((r) => {
+            const style = TONE_STYLES[r.classification.tone];
+            const pos = gaugePosition(r.zScore, r.percentile);
+            const nr = !isZemel && sex && typeof r.chartX === 'number'
+              ? pediatricNormalRange(r.indicator as PediatricIndicator, sex, r.chartX, r.chartValue)
+              : null;
+            const zBand = isZemel ? null : pediatricNormalZBand(r.indicator as PediatricIndicator);
+            const measured = typeof r.chartValue === 'number' ? formatCalc(r.chartValue) : null;
+            const unit = MEASURE_UNIT[r.indicator] ?? '';
+            return (
+              <div
+                key={r.indicator}
+                className={`relative overflow-hidden rounded-[14px] border p-4 shadow-[0_2px_10px_rgba(15,23,42,0.04)] ${style.card}`}
+              >
+                <span className={`absolute inset-y-0 left-0 w-1.5 ${style.accent}`} aria-hidden />
+                <div className="flex items-start justify-between gap-2 pl-1.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{r.indicatorLabel}</p>
+                  <span
+                    className="rounded-lg bg-white/90 px-2 py-0.5 text-[11px] font-bold tabular-nums text-slate-600 ring-1 ring-slate-200/80"
+                    title="z-score OMS o percentil"
+                  >
+                    {r.valueLabel}
+                  </span>
+                </div>
+                {measured != null ? (
+                  <p className={`mt-2 pl-1.5 text-[28px] font-extrabold leading-none tabular-nums ${style.value}`}>
+                    {measured}
+                    <span className="ml-1.5 text-sm font-semibold text-slate-400">
+                      {r.indicator === 'bmi' ? 'IMC' : unit.trim()}
+                    </span>
+                  </p>
+                ) : null}
+                <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-bold shadow-sm ${style.badge}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                  {r.classification.label}
+                </div>
+                {pos !== null ? <MiniGauge position={pos} band={zBand} /> : null}
+                {nr ? (
+                  <p className="mt-2 pl-1.5 text-[11px] text-slate-500">
+                    Normal: <span className="font-semibold tabular-nums text-slate-700">{formatNormalRange(nr)}</span>
+                  </p>
+                ) : null}
               </div>
-              <div className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${style.badge}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-                {r.classification.label}
-              </div>
-              {pos !== null ? <MiniGauge position={pos} band={zBand} /> : null}
-              {nr ? (
-                <p className="mt-2 text-[11px] text-slate-400">
-                  Normal: <span className="font-semibold text-slate-500 tabular-nums">{formatNormalRange(nr)}</span>
-                </p>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Curvas de crecimiento (colapsable): banda normal + líneas SD + la
-          progresión del niño (todas sus mediciones) con la actual marcada. */}
-      {sex && chartData.length > 0 ? (
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setShowCharts((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-          >
-            <LineChart className="h-3.5 w-3.5" />
-            {showCharts ? 'Ocultar curvas de crecimiento' : 'Ver curvas de crecimiento'}
-          </button>
-          {showCharts ? (
-            <div className="mt-3 grid gap-3 lg:grid-cols-2">
-              {chartData.map((c) => (
-                <PediatricGrowthChart
-                  key={c.indicator}
-                  indicator={c.indicator}
-                  sex={sex}
-                  standard={isZemel ? 'zemel' : 'oms'}
-                  label={c.label}
-                  points={c.points}
-                  currentTone={c.tone}
-                />
-              ))}
-            </div>
-          ) : null}
+            );
+          })}
         </div>
-      ) : null}
 
-      <p className="mt-3 border-t border-slate-100 pt-2.5 text-[11px] leading-snug text-slate-400">
-        {isZemel
-          ? 'Cartas de crecimiento específicas para síndrome de Down (Zemel BS et al., Pediatrics 2015), de 0 a 20 años. El resultado es el percentil respecto a la población con Down. A partir de los 20 años se usan los indicadores de adulto.'
-          : 'Clasificación según los patrones de crecimiento de la OMS (adoptados por MINSA) y, en 5–18 años, percentiles de Frisancho/Fernández. El z-score expresa cuántas desviaciones estándar se aparta el niño de la mediana.'}
-      </p>
+        {sex && chartData.length > 0 ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowCharts((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-white"
+            >
+              <LineChart className="h-3.5 w-3.5 text-brand-500" />
+              {showCharts ? 'Ocultar curvas de crecimiento' : 'Ver curvas de crecimiento'}
+            </button>
+            {showCharts ? (
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                {chartData.map((c) => (
+                  <PediatricGrowthChart
+                    key={c.indicator}
+                    indicator={c.indicator}
+                    sex={sex}
+                    standard={isZemel ? 'zemel' : 'oms'}
+                    label={c.label}
+                    points={c.points}
+                    currentTone={c.tone}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <p className="border-t border-slate-100 pt-3 text-[11px] leading-snug text-slate-400">
+          {isZemel
+            ? 'Cartas de crecimiento específicas para síndrome de Down · Zemel (2015). El resultado es el percentil respecto a la población con Down (0–20 años). A partir de los 20 años se usan los indicadores de adulto.'
+            : 'Clasificación según los patrones de crecimiento de la OMS (adoptados por MINSA) y, en 5–18 años, percentiles de Frisancho/Fernández. El z-score expresa cuántas desviaciones estándar se aparta el niño de la mediana.'}
+        </p>
+      </div>
     </section>
   );
 }

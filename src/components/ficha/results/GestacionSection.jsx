@@ -107,7 +107,7 @@ export default function GestacionSection({ data, patient, pregnancy }) {
           {result.category ? (
             <>
               <p className="text-[28px] font-extrabold leading-none text-slate-800 tabular-nums">
-                {result.bmi.toFixed(1)}
+                {result.bmi.toFixed(2)}
               </p>
               <span className="mt-1.5 inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
                 {result.categoryLabel}
@@ -286,9 +286,9 @@ export default function GestacionSection({ data, patient, pregnancy }) {
                     <p className="text-[15px] font-extrabold leading-tight">{result.diagnosis}</p>
                     <p className="mt-0.5 text-[11.5px] font-medium opacity-80">
                       {gain > result.range.max
-                        ? `${(gain - result.range.max).toFixed(1)} kg por encima del máximo esperado`
+                        ? `${(gain - result.range.max).toFixed(2)} kg por encima del máximo esperado`
                         : gain < result.range.min
-                          ? `${(result.range.min - gain).toFixed(1)} kg por debajo del mínimo esperado`
+                          ? `${(result.range.min - gain).toFixed(2)} kg por debajo del mínimo esperado`
                           : "Dentro del rango esperado para esta semana"}
                     </p>
                   </div>

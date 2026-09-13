@@ -7,8 +7,8 @@ export type AnyRecord = Record<string, any>;
 // Predicate "tiene valor" (no null, undefined ni cadena vacía).
 export const v = (val: unknown): boolean => val !== null && val !== undefined && val !== '';
 
-export const fmtNum = (v: number | null | undefined, digits = 1): string =>
-  v == null || !Number.isFinite(v) ? '—' : v.toFixed(digits);
+export const fmtNum = (v: number | null | undefined, digits = 2): string =>
+  v == null || !Number.isFinite(v) ? '—' : v.toFixed(Math.min(digits, 2));
 
 export const fmtDate = (iso?: string | null): string => {
   if (!iso) return '—';

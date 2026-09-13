@@ -15,6 +15,7 @@
 
 import { chip, esc, fmtDate, section } from '@/lib/anthropometry/printReport/format';
 import { REPORT_CSS } from '@/lib/anthropometry/printReport/styles';
+import { formatCalc } from '@/lib/formatCalc';
 import { openHtmlPrintPreview } from '@/lib/htmlPrintPreview';
 import { parseLocalDate, patientAgeYears } from '@/lib/patients/age';
 import {
@@ -113,7 +114,7 @@ const indexRow = (result: IndexResult): string => {
   return `
   <tr>
     <td class="lbl">${esc(result.label)}</td>
-    <td class="val">${esc(result.value.toFixed(result.decimals))}</td>
+    <td class="val">${esc(formatCalc(result.value))}</td>
     <td class="extra">${interpretation}${result.formula ? `<div class="formula">${esc(result.formula)}</div>` : ''}</td>
   </tr>`;
 };

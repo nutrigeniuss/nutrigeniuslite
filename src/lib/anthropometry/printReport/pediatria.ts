@@ -84,11 +84,11 @@ export const buildPediatricSections = (
     : '';
   const seccionPediatrica = isChild
     ? section(
-        isZemel ? 'Evaluación pediátrica — cartas de Síndrome de Down (Zemel 2015)' : 'Evaluación pediátrica — patrones de crecimiento OMS',
+        isZemel ? 'Evaluación pediátrica — Síndrome de Down · Zemel (2015)' : 'Evaluación pediátrica — patrones de crecimiento OMS',
         'dot-primary', pedRows, {
           headerCols: `<th>Indicador</th><th>Valor</th><th>${isZemel ? '' : 'Rango normal'}</th><th>Clasificación</th>`,
           before: isZemel
-            ? '<p style="margin:0 0 8px;font-size:10px;line-height:1.4;color:#64748b">Cartas de crecimiento específicas para síndrome de Down (Zemel BS et al., Pediatrics 2015), de 0 a 20 años. El valor es el percentil respecto a la población con Down.</p>'
+            ? '<p style="margin:0 0 8px;font-size:10px;line-height:1.4;color:#64748b">Cartas de crecimiento específicas para síndrome de Down · Zemel (2015), de 0 a 20 años. El valor es el percentil respecto a la población con Down.</p>'
             : '<p style="margin:0 0 8px;font-size:10px;line-height:1.4;color:#64748b">Clasificación según los patrones de crecimiento de la OMS (adoptados por MINSA) por edad y sexo. El z-score expresa cuántas desviaciones estándar se aparta el niño de la mediana.</p>',
         })
     : '';

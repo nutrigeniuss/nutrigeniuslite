@@ -55,7 +55,7 @@ const avisosDeCalidad = ({ sk, p, w, pesoPredictivo, deltaPct }) => {
     // Se dice qué significa la diferencia y qué revisar, en lugar del símbolo
     // técnico |Δ%|, e incluyendo la dirección (sobre o subestima).
     const direccion = deltaPct > 0 ? 'mayor' : 'menor';
-    const absPct = Math.abs(deltaPct).toFixed(1);
+    const absPct = Math.abs(deltaPct).toFixed(2);
     avisos.push(
       `El peso estimado por las masas (${pesoPredictivo} kg) es ${absPct}% ${direccion} al peso real (${w} kg). `
       + 'Suele indicar errores en talla sentado o en los diámetros del tórax (transverso/anteroposterior). Te recomendamos repetir esas mediciones.'

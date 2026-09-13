@@ -148,7 +148,7 @@ export default function ComposicionSection({ data, sex, ageYears, onGoToField })
   const total5 = components5.reduce((s, c) => s + (c.kgAdj || 0), 0);
 
   // % sobre peso real (mejor referencia clínica que sobre el predictivo)
-  const pct = (mass) => (v(w) && mass ? +((mass / w) * 100).toFixed(1) : null);
+  const pct = (mass) => (v(w) && mass ? +((mass / w) * 100).toFixed(2) : null);
 
   return (
     <SectionCard title="Composición Corporal" color="orange">

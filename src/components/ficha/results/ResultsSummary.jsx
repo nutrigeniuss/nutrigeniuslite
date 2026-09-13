@@ -11,6 +11,7 @@ import {
   calcWHtR,
 } from '@/lib/anthropometry';
 import { useFormulaGrasa } from '@/hooks/useFormulaGrasa';
+import { formatCalc } from '@/lib/formatCalc';
 import { SEVERITY_CLASS, v } from './resultsShared';
 
 function n(x) {
@@ -118,22 +119,31 @@ export default function ResultsSummary({ data, sex, ageYears }) {
   return (
     <div
       data-testid="results-summary"
-      className="grid grid-cols-2 gap-2 rounded-[1.5rem] border border-slate-200/80 bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:grid-cols-3 sm:gap-3 sm:p-4 lg:grid-cols-5"
+      className="overflow-hidden rounded-[1.5rem] border border-brand-200/70 bg-white shadow-[0_10px_28px_rgba(59,95,235,0.08)]"
     >
-      {cells.map((cell) => (
-        <SummaryCell key={cell.key} {...cell} />
-      ))}
+      <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-white">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/75">Resultados</p>
+        <p className="text-sm font-bold">Resumen antropométrico</p>
+      </div>
+      <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 sm:gap-3 sm:p-4 lg:grid-cols-5">
+        {cells.map((cell) => (
+          <SummaryCell key={cell.key} {...cell} />
+        ))}
+      </div>
     </div>
   );
 }
 
 function SummaryCell({ label, value, unit, hint, tone, missing, accent }) {
   const showHint = hint || missing;
+  const display = value != null && value !== ''
+    ? (typeof value === 'number' ? formatCalc(value) : value)
+    : '—';
   return (
-    <div className="min-w-0 rounded-2xl bg-[#fafbfd] px-2.5 py-2.5 sm:px-3">
+    <div className="min-w-0 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white px-2.5 py-2.5 sm:px-3">
       <p className="ng-label !normal-case !tracking-normal">{label}</p>
       <p className={`ng-metric mt-1 ${accent ? 'text-coral-500' : ''}`}>
-        {value != null && value !== '' ? value : '—'}
+        {display}
         {unit && value != null && value !== '' ? (
           <span className="ml-0.5 text-xs font-semibold text-slate-400">{unit}</span>
         ) : null}

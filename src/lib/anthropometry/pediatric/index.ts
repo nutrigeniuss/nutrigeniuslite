@@ -479,7 +479,7 @@ export type NormalRange = { min: number; max: number | null; unit: string };
 // Cuántos decimales hacen falta como máximo antes de rendirse. Con 3 la
 // diferencia entre el límite exacto y el mostrado es de gramos: si a esa altura
 // sigue habiendo empate es que la medición cae JUSTO sobre el límite.
-const MAX_RANGE_DECIMALS = 3;
+const MAX_RANGE_DECIMALS = 2;
 
 // Rango de la medición (kg/cm/mm) considerado normal para la edad/talla y sexo.
 // `max` es null cuando la banda no tiene tope superior (p. ej. braquial).
