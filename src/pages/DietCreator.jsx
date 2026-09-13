@@ -168,30 +168,15 @@ export default function DietCreator() {
         phoneRaw,
         patientName: resolvedPatientName || patientNameUrl,
         planTitle: title,
-        getPdfFile: async () => {
-          let recipes = printRecipes;
-          if (recipes === null) {
-            try {
-              const loaded = await listRecipes(user?.id);
-              recipes = loaded?.data || [];
-              setPrintRecipes(recipes);
-            } catch {
-              recipes = [];
-              setPrintRecipes([]);
-            }
-          }
-          return dietPlanToPdfFile({
-            title,
-            date,
-            patientName: resolvedPatientName || patientNameUrl,
-            meals,
-            targetCalories,
-            recipes,
-            brandLogoUrl: user?.brandLogoUrl,
-            brandName: user?.brandName,
-            filename: title || "plan-alimentario",
-          });
-        },
+        getPdfFile: () => dietPlanToPdfFile({
+          title,
+          date,
+          patientName: resolvedPatientName || patientNameUrl,
+          meals,
+          targetCalories,
+          brandName: user?.brandName,
+          filename: title || "plan-alimentario",
+        }),
       });
 
       if (!result.ok && result.reason === "missing-phone") {
