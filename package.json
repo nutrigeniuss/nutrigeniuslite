@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run src/lib/access.test.ts src/lib/adminAccess.test.ts src/lib/adminWhatsAppInvite.test.ts src/lib/shareDietWhatsApp.test.ts src/lib/dietFoodsPrintHtml.test.ts src/lib/sessionDietDb.test.ts src/lib/officialFoodsExcelMap.test.ts src/lib/parseOfficialFoodsWorkbook.test.ts src/lib/buildPersistedMasterRow.test.ts src/lib/sessionInactivity.test.ts",
+    "test": "vitest run src/lib/access.test.ts src/lib/adminAccess.test.ts src/lib/adminWhatsAppInvite.test.ts src/lib/sessionDietDb.test.ts src/lib/officialFoodsExcelMap.test.ts src/lib/parseOfficialFoodsWorkbook.test.ts src/lib/buildPersistedMasterRow.test.ts src/lib/sessionInactivity.test.ts",
     "test:admin": "vitest run src/lib/adminAccess.test.ts"
   },
   "dependencies": {
@@ -26,8 +26,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1",
     "lucide-react": "^1.44.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

@@ -11,8 +11,6 @@ export type PatientDietRecord = {
   birth_date?: string | null;
   gender?: string | null;
   sex?: string | null;
-  /** Celular / WhatsApp (sesión Lite). */
-  whatsapp?: string | null;
   target_calories?: number | null;
   target_protein?: number | null;
   target_carbs?: number | null;

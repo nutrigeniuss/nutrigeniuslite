@@ -39,9 +39,6 @@ import { buildMacroTargetsFromPatient } from "@/lib/dietPlan";
 import ResumenPanel from "@/components/exchanges/ResumenPanel";
 import { buildExchangePrintHtml } from "@/lib/exchangePrint";
 import { openHtmlPrintPreview } from "@/lib/htmlPrintPreview";
-import { htmlToPdfFile } from "@/lib/pdfFromHtml";
-import { resolvePatientWhatsapp } from "@/lib/fichaWhatsapp";
-import { sendDietViaWhatsApp } from "@/lib/shareDietWhatsApp";
 import { isSessionFichaId, resolveSessionPatientId, SESSION_FICHA_ID } from "@/lib/sessionFicha";
 import ExchangeFoodIndications from "@/components/exchanges/ExchangeFoodIndications";
 import ExchangeTable from "@/components/exchanges/ExchangeTable";
@@ -90,7 +87,6 @@ export default function ExchangeDietCreator() {
   const [patientRecord, setPatientRecord] = useState(null);
   const [showMacroEditor, setShowMacroEditor] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
-  const [whatsAppBusy, setWhatsAppBusy] = useState(false);
   // Colapsar el panel de resumen nutricional en desktop (igual que "por alimentos").
   const [isDesktopSummaryCollapsed, setIsDesktopSummaryCollapsed] = useState(false);
   const [foodSearchByGroup, setFoodSearchByGroup] = useState({});
@@ -582,62 +578,6 @@ export default function ExchangeDietCreator() {
     }
   };
 
-  const handleWhatsApp = async () => {
-    if (whatsAppBusy) return;
-    setWhatsAppBusy(true);
-    const phoneRaw = resolvePatientWhatsapp(
-      new URLSearchParams(window.location.search).get("whatsapp"),
-    );
-    try {
-      // Snapshot sync del HTML; el await (PDF) va dentro de sendDietViaWhatsApp
-      // después de abrir la pestaña (gesto del toque).
-      const html = buildExchangePrintHtml({
-        scenarios,
-        activeScenario,
-        activeGroups,
-        meals,
-        totalsKcal: totals.kcal,
-        title,
-        patientName: resolvedPatientName || patientName,
-        date,
-        allUsedFoodGroups,
-        mergedFoodSelections,
-        brandLogoUrl: user?.brandLogoUrl,
-        brandName: user?.brandName,
-      });
-
-      const result = await sendDietViaWhatsApp({
-        phoneRaw,
-        patientName: resolvedPatientName || patientName,
-        planTitle: title,
-        getPdfFile: () => htmlToPdfFile(html, `${title || 'plan-intercambios'}.pdf`),
-      });
-
-      if (!result.ok && result.reason === 'missing-phone') {
-        toast({
-          title: 'Falta el celular del paciente',
-          description: 'En la ficha: Editar → WhatsApp / celular (ej. 999 888 777).',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (!result.ok) {
-        toast({
-          title: 'WhatsApp abierto',
-          description: result.message || 'El PDF no se generó; usa PDF / Imprimir y adjúntalo al chat.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      toast({
-        title: 'Listo para enviar',
-        description: 'Se descargó el PDF y se abrió el chat. Adjúntalo en WhatsApp.',
-      });
-    } finally {
-      setWhatsAppBusy(false);
-    }
-  };
-
   const persistPlan = useCallback(async (origin = "manual") => {
     if (isSavingRef.current) {
       return false;
@@ -847,8 +787,6 @@ export default function ExchangeDietCreator() {
         onBack={() => void handleBackToPatient()}
         onShowMacroEditor={() => setShowMacroEditor(true)}
         onPrint={handlePrint}
-        onWhatsApp={() => void handleWhatsApp()}
-        whatsAppBusy={whatsAppBusy}
         onShowMobileSummary={() => setShowMobileSummary(true)}
       />
 

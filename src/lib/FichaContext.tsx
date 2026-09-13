@@ -36,8 +36,6 @@ export type FichaPatient = {
   birth_date?: string | null;
   gender?: string | null;
   sex?: string | null;
-  /** Celular / WhatsApp del paciente (sesión local). */
-  whatsapp?: string | null;
   measurements: FichaMeasurement[];
   pregnancies?: import('@/lib/gestation/gestationalGain').PregnancyRecord[];
   /** Siempre [] en Lite: bioquímica solo en memoria de la pestaña. */
@@ -117,7 +115,6 @@ function defaultPatient(): FichaPatient {
     birth_date: null,
     gender: 'Femenino',
     sex: 'Femenino',
-    whatsapp: '',
     measurements: [{ date: todayISO() }],
     pregnancies: [],
     biochemistry: [],

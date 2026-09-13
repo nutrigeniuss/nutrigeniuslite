@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Printer, ShieldAlert, SlidersHorizontal, Bot, Pencil, ChevronDown, MoreHorizontal, MessageCircle } from "lucide-react";
+import { Printer, ShieldAlert, SlidersHorizontal, Bot, Pencil, ChevronDown, MoreHorizontal } from "lucide-react";
 import BackLink from "@/components/ui/back-link";
 
 function RestrictionsPill({ restrictions }) {
@@ -59,7 +59,7 @@ function RestrictionsPill({ restrictions }) {
   );
 }
 
-/** Menú móvil: PDF + WhatsApp (+ macros / asistente si aplican). */
+/** Menú móvil: PDF / Imprimir (+ macros / asistente si aplican). */
 function MobileActionsMenu({
   patientId,
   readOnly,
@@ -67,8 +67,6 @@ function MobileActionsMenu({
   macroEditorDisabled,
   onShowMacroEditor,
   onPrint,
-  onWhatsApp,
-  whatsAppBusy,
   onOpenAssistant,
 }) {
   const [open, setOpen] = useState(false);
@@ -123,19 +121,6 @@ function MobileActionsMenu({
             <Printer className="h-4 w-4 text-slate-500" />
             PDF / Imprimir
           </button>
-
-          {onWhatsApp ? (
-            <button
-              type="button"
-              role="menuitem"
-              disabled={whatsAppBusy}
-              onClick={() => run(onWhatsApp)}
-              className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            >
-              <MessageCircle className="h-4 w-4 text-emerald-600" />
-              {whatsAppBusy ? "Generando…" : "WhatsApp"}
-            </button>
-          ) : null}
 
           {patientId && !readOnly ? (
             <button
@@ -196,8 +181,6 @@ export default function DietEditorToolbar({
   macroEditorDisabled,
   restrictions = [],
   onPrint,
-  onWhatsApp,
-  whatsAppBusy = false,
   onOpenAssistant,
   readOnly = false,
 }) {
@@ -259,8 +242,6 @@ export default function DietEditorToolbar({
         macroEditorDisabled={macroEditorDisabled}
         onShowMacroEditor={onShowMacroEditor}
         onPrint={onPrint}
-        onWhatsApp={onWhatsApp}
-        whatsAppBusy={whatsAppBusy}
         onOpenAssistant={onOpenAssistant}
       />
 
@@ -287,18 +268,6 @@ export default function DietEditorToolbar({
           <Printer className="h-4 w-4" />
           <span className="hidden lg:inline">Imprimir</span>
         </button>
-        {onWhatsApp ? (
-          <button
-            type="button"
-            onClick={onWhatsApp}
-            disabled={whatsAppBusy}
-            title="Enviar por WhatsApp"
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
-          >
-            <MessageCircle className="h-4 w-4" />
-            <span className="hidden lg:inline">{whatsAppBusy ? "…" : "WhatsApp"}</span>
-          </button>
-        ) : null}
         {!readOnly && onOpenAssistant ? (
           <>
             <div className="mx-1 h-6 w-px bg-slate-200" aria-hidden="true" />

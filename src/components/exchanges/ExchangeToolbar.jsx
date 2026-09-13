@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Printer, SlidersHorizontal, MoreHorizontal, ChevronDown, MessageCircle } from "lucide-react";
+import { Printer, SlidersHorizontal, MoreHorizontal, ChevronDown } from "lucide-react";
 import BackLink from "@/components/ui/back-link";
 
 function MobileActionsMenu({
@@ -7,8 +7,6 @@ function MobileActionsMenu({
   patientRecord,
   onShowMacroEditor,
   onPrint,
-  onWhatsApp,
-  whatsAppBusy,
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -61,18 +59,6 @@ function MobileActionsMenu({
             <Printer className="h-4 w-4 text-slate-500" />
             PDF / Imprimir
           </button>
-          {onWhatsApp ? (
-            <button
-              type="button"
-              role="menuitem"
-              disabled={whatsAppBusy}
-              onClick={() => run(onWhatsApp)}
-              className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            >
-              <MessageCircle className="h-4 w-4 text-emerald-600" />
-              {whatsAppBusy ? "Generando…" : "WhatsApp"}
-            </button>
-          ) : null}
           {patientId ? (
             <button
               type="button"
@@ -102,8 +88,6 @@ export default function ExchangeToolbar({
   onBack,
   onShowMacroEditor,
   onPrint,
-  onWhatsApp,
-  whatsAppBusy = false,
   onShowMobileSummary,
 }) {
   return (
@@ -142,8 +126,6 @@ export default function ExchangeToolbar({
             patientRecord={patientRecord}
             onShowMacroEditor={onShowMacroEditor}
             onPrint={onPrint}
-            onWhatsApp={onWhatsApp}
-            whatsAppBusy={whatsAppBusy}
           />
         </div>
 
@@ -186,18 +168,6 @@ export default function ExchangeToolbar({
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir
           </button>
-
-          {onWhatsApp ? (
-            <button
-              type="button"
-              onClick={onWhatsApp}
-              disabled={whatsAppBusy}
-              className="flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50 sm:h-[29px] sm:min-h-0"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              {whatsAppBusy ? "…" : "WhatsApp"}
-            </button>
-          ) : null}
         </div>
       </div>
     </div>

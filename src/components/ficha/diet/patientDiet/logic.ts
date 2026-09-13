@@ -52,11 +52,7 @@ export const buildPatientParam = (patient: PatientDietRecord, patientName: strin
   const isSession = !patient.id || patient.id === 'session-ficha';
   const patientId = isSession ? 'session-ficha' : patient.id;
   const target = patient.target_calories || 2000;
-  const whatsappRaw = typeof patient.whatsapp === 'string' ? patient.whatsapp.trim() : '';
-  const whatsappQs = whatsappRaw
-    ? `&whatsapp=${encodeURIComponent(whatsappRaw)}`
-    : '';
-  return `patientId=${patientId}&patientName=${encodeURIComponent(patientName)}&targetCal=${target}${whatsappQs}`;
+  return `patientId=${patientId}&patientName=${encodeURIComponent(patientName)}&targetCal=${target}`;
 };
 
 export const hasMacroConfiguration = (patient: PatientDietRecord): boolean => {

@@ -28,10 +28,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useAutosaveOnLeave } from "@/hooks/useAutosaveOnLeave";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { buildFoodPlanItem } from "@/lib/dietPlanItem";
-import { resolvePatientWhatsapp } from "@/lib/fichaWhatsapp";
-import { dietPlanToPdfFile } from "@/lib/dietPrintPdf";
-import { sendDietViaWhatsApp } from "@/lib/shareDietWhatsApp";
-import { isSessionFichaId, resolveSessionPatientId, SESSION_FICHA_ID } from "@/lib/sessionFicha";
+import { resolveSessionPatientId, isSessionFichaId, SESSION_FICHA_ID } from "@/lib/sessionFicha";
 import {
   DEFAULT_MEALS,
   DEFAULT_MEAL_IDS,
@@ -98,7 +95,6 @@ export default function DietCreator() {
   const [activeMealId, setActiveMealId]       = useState(DEFAULT_MEALS[0].id);
   const [saving, setSaving]                   = useState(false);
   const [showPrint, setShowPrint]             = useState(false);
-  const [whatsAppBusy, setWhatsAppBusy]       = useState(false);
   const [currentPlanId, setCurrentPlanId]       = useState(initialPlanId);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
   // Lite excludes clinical AI assistant — no showAssistant state.
@@ -158,56 +154,6 @@ export default function DietCreator() {
 
   const openPrintPreview = () => {
     setShowPrint(true);
-  };
-
-  const handleWhatsApp = async () => {
-    if (whatsAppBusy) return;
-    setWhatsAppBusy(true);
-    // Leer celular fresco (URL o ficha en localStorage) en el momento del toque.
-    const phoneRaw = resolvePatientWhatsapp(
-      new URLSearchParams(window.location.search).get("whatsapp"),
-    );
-    try {
-      // No hacer await antes de sendDietViaWhatsApp: necesita el gesto del click
-      // para abrir la pestaña de WhatsApp (si no, el navegador la bloquea).
-      const result = await sendDietViaWhatsApp({
-        phoneRaw,
-        patientName: resolvedPatientName || patientNameUrl,
-        planTitle: title,
-        getPdfFile: () => dietPlanToPdfFile({
-          title,
-          date,
-          patientName: resolvedPatientName || patientNameUrl,
-          meals,
-          targetCalories,
-          brandName: user?.brandName,
-          filename: title || "plan-alimentario",
-        }),
-      });
-
-      if (!result.ok && result.reason === "missing-phone") {
-        toast({
-          title: "Falta el celular del paciente",
-          description: "En la ficha: Editar → WhatsApp / celular (ej. 999 888 777).",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!result.ok) {
-        toast({
-          title: "WhatsApp abierto",
-          description: result.message || "El PDF no se generó; usa PDF / Imprimir y adjúntalo al chat.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({
-        title: "Listo para enviar",
-        description: "Se descargó el PDF y se abrió el chat. Adjúntalo en WhatsApp.",
-      });
-    } finally {
-      setWhatsAppBusy(false);
-    }
   };
 
   // Calienta el catálogo de alimentos apenas se abre el editor (no al abrir el
@@ -784,8 +730,6 @@ export default function DietCreator() {
           macroEditorDisabled={!patientRecord}
           restrictions={dietaryRestrictions}
           onPrint={openPrintPreview}
-          onWhatsApp={() => void handleWhatsApp()}
-          whatsAppBusy={whatsAppBusy}
           readOnly={isInspecting}
         />
 
