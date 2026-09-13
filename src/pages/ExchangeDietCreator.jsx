@@ -58,7 +58,6 @@ export default function ExchangeDietCreator() {
   const initialPlanId = urlParams.get("planId") || "";
   const patientId = urlParams.get("patientId") || "";
   const patientName = urlParams.get("patientName") || "Paciente";
-  const patientWhatsapp = resolvePatientWhatsapp(urlParams.get("whatsapp"));
   const targetKcal = parseInt(urlParams.get("targetCal") || "2000");
   const requestedDate = urlParams.get("date") || "";
   const initialDate = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ? requestedDate : todayLocalDateStr();
@@ -574,7 +573,12 @@ export default function ExchangeDietCreator() {
   const handleWhatsApp = async () => {
     if (whatsAppBusy) return;
     setWhatsAppBusy(true);
+    const phoneRaw = resolvePatientWhatsapp(
+      new URLSearchParams(window.location.search).get("whatsapp"),
+    );
     try {
+      // Snapshot sync del HTML; el await (PDF) va dentro de sendDietViaWhatsApp
+      // después de abrir la pestaña (gesto del toque).
       const html = buildExchangePrintHtml({
         scenarios,
         activeScenario,
@@ -591,7 +595,7 @@ export default function ExchangeDietCreator() {
       });
 
       const result = await sendDietViaWhatsApp({
-        phoneRaw: patientWhatsapp,
+        phoneRaw,
         patientName: resolvedPatientName || patientName,
         planTitle: title,
         getPdfFile: () => htmlToPdfFile(html, `${title || 'plan-intercambios'}.pdf`),
@@ -600,25 +604,23 @@ export default function ExchangeDietCreator() {
       if (!result.ok && result.reason === 'missing-phone') {
         toast({
           title: 'Falta el celular del paciente',
-          description: 'Agrégalo en la ficha (WhatsApp / celular) y vuelve a intentar.',
+          description: 'En la ficha: Editar → WhatsApp / celular (ej. 999 888 777).',
           variant: 'destructive',
         });
         return;
       }
       if (!result.ok) {
         toast({
-          title: 'No se pudo preparar WhatsApp',
-          description: result.message || 'Intenta de nuevo.',
+          title: 'WhatsApp abierto',
+          description: result.message || 'El PDF no se generó; usa PDF / Imprimir y adjúntalo al chat.',
           variant: 'destructive',
         });
         return;
       }
-      if (result.mode === 'download+wa') {
-        toast({
-          title: 'PDF listo',
-          description: 'Se descargó el plan y se abrió el chat. Adjúntalo en WhatsApp.',
-        });
-      }
+      toast({
+        title: 'Listo para enviar',
+        description: 'Se descargó el PDF y se abrió el chat. Adjúntalo en WhatsApp.',
+      });
     } finally {
       setWhatsAppBusy(false);
     }

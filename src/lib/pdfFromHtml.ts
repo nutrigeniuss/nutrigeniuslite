@@ -21,12 +21,19 @@ export async function elementToPdfFile(
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
-    allowTaint: true,
+    // allowTaint:true hace fallar toDataURL en Chrome/Android con logos externos.
+    allowTaint: false,
     backgroundColor: '#ffffff',
     logging: false,
+    imageTimeout: 5000,
   });
 
-  const img = canvas.toDataURL('image/jpeg', 0.92);
+  let img: string;
+  try {
+    img = canvas.toDataURL('image/jpeg', 0.92);
+  } catch {
+    throw new Error('No se pudo capturar el plan (imagen bloqueada). Prueba sin logo de marca o usa Imprimir.');
+  }
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();

@@ -72,7 +72,6 @@ export default function DietCreator() {
   const urlParams      = new URLSearchParams(window.location.search);
   const patientId      = urlParams.get("patientId") || "";
   const patientNameUrl = urlParams.get("patientName") || "Paciente";
-  const patientWhatsapp = resolvePatientWhatsapp(urlParams.get("whatsapp"));
   const targetCalUrl   = parseInt(urlParams.get("targetCal")) || 2000;
   const initialDate    = urlParams.get("date") || todayLocalDateStr();
   const initialPlanId  = urlParams.get("planId") || "";
@@ -158,58 +157,63 @@ export default function DietCreator() {
   const handleWhatsApp = async () => {
     if (whatsAppBusy) return;
     setWhatsAppBusy(true);
+    // Leer celular fresco (URL o ficha en localStorage) en el momento del toque.
+    const phoneRaw = resolvePatientWhatsapp(
+      new URLSearchParams(window.location.search).get("whatsapp"),
+    );
     try {
-      let recipes = printRecipes;
-      if (recipes === null) {
-        try {
-          const result = await listRecipes(user?.id);
-          recipes = result?.data || [];
-          setPrintRecipes(recipes);
-        } catch {
-          recipes = [];
-          setPrintRecipes([]);
-        }
-      }
-
+      // No hacer await antes de sendDietViaWhatsApp: necesita el gesto del click
+      // para abrir la pestaña de WhatsApp (si no, el navegador la bloquea).
       const result = await sendDietViaWhatsApp({
-        phoneRaw: patientWhatsapp,
+        phoneRaw,
         patientName: resolvedPatientName || patientNameUrl,
         planTitle: title,
-        getPdfFile: () => dietPlanToPdfFile({
-          title,
-          date,
-          patientName: resolvedPatientName || patientNameUrl,
-          meals,
-          targetCalories,
-          recipes,
-          brandLogoUrl: user?.brandLogoUrl,
-          brandName: user?.brandName,
-          filename: title || "plan-alimentario",
-        }),
+        getPdfFile: async () => {
+          let recipes = printRecipes;
+          if (recipes === null) {
+            try {
+              const loaded = await listRecipes(user?.id);
+              recipes = loaded?.data || [];
+              setPrintRecipes(recipes);
+            } catch {
+              recipes = [];
+              setPrintRecipes([]);
+            }
+          }
+          return dietPlanToPdfFile({
+            title,
+            date,
+            patientName: resolvedPatientName || patientNameUrl,
+            meals,
+            targetCalories,
+            recipes,
+            brandLogoUrl: user?.brandLogoUrl,
+            brandName: user?.brandName,
+            filename: title || "plan-alimentario",
+          });
+        },
       });
 
       if (!result.ok && result.reason === "missing-phone") {
         toast({
           title: "Falta el celular del paciente",
-          description: "Agrégalo en la ficha (WhatsApp / celular) y vuelve a intentar.",
+          description: "En la ficha: Editar → WhatsApp / celular (ej. 999 888 777).",
           variant: "destructive",
         });
         return;
       }
       if (!result.ok) {
         toast({
-          title: "No se pudo preparar WhatsApp",
-          description: result.message || "Intenta de nuevo.",
+          title: "WhatsApp abierto",
+          description: result.message || "El PDF no se generó; usa PDF / Imprimir y adjúntalo al chat.",
           variant: "destructive",
         });
         return;
       }
-      if (result.mode === "download+wa") {
-        toast({
-          title: "PDF listo",
-          description: "Se descargó el plan y se abrió el chat. Adjúntalo en WhatsApp.",
-        });
-      }
+      toast({
+        title: "Listo para enviar",
+        description: "Se descargó el PDF y se abrió el chat. Adjúntalo en WhatsApp.",
+      });
     } finally {
       setWhatsAppBusy(false);
     }

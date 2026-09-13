@@ -16,17 +16,36 @@ export function buildDietWhatsAppMessage(input: {
     '',
     planLine,
     '',
+    'Te adjunto el PDF del plan.',
     'Cualquier duda, escríbeme por aquí.',
   ].join('\n');
 }
 
 export type SendDietWhatsAppResult =
-  | { ok: true; mode: 'share' | 'download+wa' | 'cancelled' }
+  | { ok: true; mode: 'download+wa'; pdfOk: boolean }
   | { ok: false; reason: 'missing-phone' | 'error'; message?: string };
 
+/** Abre WhatsApp sin depender de window.open tras un await (móvil lo bloquea). */
+export function openWhatsAppChat(waUrl: string): void {
+  try {
+    const opened = window.open(waUrl, '_blank', 'noopener,noreferrer');
+    if (opened) return;
+  } catch {
+    /* ancla */
+  }
+
+  const anchor = document.createElement('a');
+  anchor.href = waUrl;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 /**
- * Genera el PDF (vía getPdfFile), intenta compartirlo y abre WhatsApp
- * al número del paciente cuando hace falta adjuntar manualmente.
+ * Abre el chat de WhatsApp al toque (gesto del usuario) y en paralelo
+ * genera/descarga el PDF para adjuntarlo en ese chat.
  */
 export async function sendDietViaWhatsApp(input: {
   phoneRaw: string;
@@ -35,7 +54,8 @@ export async function sendDietViaWhatsApp(input: {
   getPdfFile: () => Promise<File>;
 }): Promise<SendDietWhatsAppResult> {
   const phone = normalizeWhatsAppPhone(input.phoneRaw);
-  if (phone.length < 11) {
+  // PE: 51 + 9 = 11. Aceptamos ≥ 10 (otros países).
+  if (phone.length < 10) {
     return { ok: false, reason: 'missing-phone' };
   }
 
@@ -45,41 +65,21 @@ export async function sendDietViaWhatsApp(input: {
   });
   const waUrl = whatsAppSendUrl(phone, message);
 
-  let file: File;
+  // 1) Abrir WhatsApp YA — aún dentro del gesto del click (antes de await).
+  openWhatsAppChat(waUrl);
+
+  // 2) Generar y descargar PDF (el nutri lo adjunta en el chat ya abierto).
   try {
-    file = await input.getPdfFile();
+    const file = await input.getPdfFile();
+    downloadPdfFile(file);
+    return { ok: true, mode: 'download+wa', pdfOk: true };
   } catch (err) {
     return {
       ok: false,
       reason: 'error',
-      message: err instanceof Error ? err.message : 'No se pudo generar el PDF',
+      message: err instanceof Error
+        ? `${err.message} WhatsApp ya está abierto: usa PDF / Imprimir y adjúntalo.`
+        : 'WhatsApp ya está abierto: usa PDF / Imprimir y adjúntalo al chat.',
     };
   }
-
-  const canShareFiles =
-    typeof navigator !== 'undefined'
-    && typeof navigator.share === 'function'
-    && typeof navigator.canShare === 'function'
-    && navigator.canShare({ files: [file] });
-
-  if (canShareFiles) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: input.planTitle || 'Plan alimentario',
-        text: message,
-      });
-      return { ok: true, mode: 'share' };
-    } catch (err) {
-      const name = err instanceof Error ? err.name : '';
-      if (name === 'AbortError') {
-        return { ok: true, mode: 'cancelled' };
-      }
-      // Sigue con descarga + chat
-    }
-  }
-
-  downloadPdfFile(file);
-  window.open(waUrl, '_blank', 'noopener,noreferrer');
-  return { ok: true, mode: 'download+wa' };
 }
