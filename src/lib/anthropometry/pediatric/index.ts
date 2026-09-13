@@ -334,11 +334,12 @@ export const buildIndicatorTrajectory = (
     if (x === null || value === null || value === undefined || !Number.isFinite(x) || !Number.isFinite(value)) continue;
     if (x < domMin || x > domMax) continue;
     const bd = ageBreakdown(birthDate, m.date);
+    const dateKey = (d?: string | null) => (d ? String(d).slice(0, 10) : null);
     points.push({
       x,
       value,
       date: m.date ?? null,
-      isCurrent: !!currentDate && m.date === currentDate,
+      isCurrent: !!currentDate && dateKey(m.date) === dateKey(currentDate),
       ageLabel: bd ? formatAgeParts(bd) : undefined,
     });
   }
@@ -378,11 +379,12 @@ export const buildZemelTrajectory = (
     }
     if (x === null || value === null || value === undefined || !Number.isFinite(x) || !Number.isFinite(value)) continue;
     const bd = ageBreakdown(birthDate, m.date);
+    const dateKey = (d?: string | null) => (d ? String(d).slice(0, 10) : null);
     points.push({
       x,
       value,
       date: m.date ?? null,
-      isCurrent: !!currentDate && m.date === currentDate,
+      isCurrent: !!currentDate && dateKey(m.date) === dateKey(currentDate),
       ageLabel: bd ? formatAgeParts(bd) : undefined,
     });
   }

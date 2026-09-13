@@ -173,40 +173,50 @@ export default function PediatricGrowthChart({
             <YAxis yAxisId="l" domain={[yMin, yMax]} tick={{ fontSize: 10, fill: '#94a3b8' }} width={30} allowDecimals={false} />
             <Tooltip
               cursor={{ stroke: '#cbd5e1', strokeDasharray: '3 3' }}
-              content={({ label: x, active }) => {
-                if (!active || typeof x !== 'number') return null;
-                const pt = points.find((p) => Math.abs(p.x - x) < 0.75);
-                const ageText = isAge && pt?.ageLabel ? pt.ageLabel : fmtXFull(pt ? pt.x : x);
+              shared={false}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                // Solo mediciones del niño (Scatter). Las curvas llevan tooltipType=none:
+                // si no, Recharts usa el X de la curva bajo el cursor (p. ej. 61 m = «5a 1m»
+                // al pasar sobre el punto rojo cerca del borde izquierdo del eje 5–19).
+                const pt = payload
+                  .map((entry) => entry?.payload as TrajectoryPoint | undefined)
+                  .find((row) => row != null && typeof row.value === 'number' && typeof row.x === 'number'
+                    && (row.isCurrent != null || row.ageLabel != null || row.date !== undefined));
+                if (!pt) return null;
+                const ageText = isAge && pt.ageLabel ? pt.ageLabel : fmtXFull(pt.x);
+                // Valor real (sin clamp del dibujo) para no mentir en extremos.
+                const raw = points.find((p) => p.isCurrent === pt.isCurrent && Math.abs(p.x - pt.x) < 0.01) ?? pt;
                 return (
                   <div className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[10px] shadow-sm">
                     <div className="text-slate-500">{isAge ? 'Edad' : 'Talla'}: {ageText}</div>
-                    {pt ? (
-                      <div className="font-bold" style={{ color: BRAND_BLUE }}>{measure.label}: {pt.value}{measure.unit}</div>
-                    ) : null}
+                    <div className="font-bold" style={{ color: BRAND_BLUE }}>
+                      {measure.label}: {raw.value}{measure.unit}
+                    </div>
                   </div>
                 );
               }}
             />
             {/* Zona normal (−2 a +2 DE) muy sutil */}
-            <Area yAxisId="l" dataKey="normalBand" stroke="none" fill="#eafaf0" fillOpacity={0.7} isAnimationActive={false} />
+            <Area yAxisId="l" dataKey="normalBand" stroke="none" fill="#eafaf0" fillOpacity={0.7} isAnimationActive={false} tooltipType="none" />
             {/* Líneas de referencia (SD OMS o percentiles Zemel) */}
-            <Line yAxisId="l" dataKey="sd3neg" dot={false} stroke={C_SD3} strokeWidth={1} isAnimationActive={false}>
+            <Line yAxisId="l" dataKey="sd3neg" dot={false} stroke={C_SD3} strokeWidth={1} isAnimationActive={false} tooltipType="none">
               <LabelList content={endLabel(lineLabels[0], C_SD3)} />
             </Line>
-            <Line yAxisId="l" dataKey="sd2neg" dot={false} stroke={C_SD2} strokeWidth={1} isAnimationActive={false}>
+            <Line yAxisId="l" dataKey="sd2neg" dot={false} stroke={C_SD2} strokeWidth={1} isAnimationActive={false} tooltipType="none">
               <LabelList content={endLabel(lineLabels[1], C_SD2)} />
             </Line>
-            <Line yAxisId="l" dataKey="sd0" dot={false} stroke={C_MEDIAN} strokeWidth={1.6} isAnimationActive={false}>
+            <Line yAxisId="l" dataKey="sd0" dot={false} stroke={C_MEDIAN} strokeWidth={1.6} isAnimationActive={false} tooltipType="none">
               <LabelList content={endLabel(lineLabels[2], C_MEDIAN)} />
             </Line>
-            <Line yAxisId="l" dataKey="sd2" dot={false} stroke={C_SD2} strokeWidth={1} isAnimationActive={false}>
+            <Line yAxisId="l" dataKey="sd2" dot={false} stroke={C_SD2} strokeWidth={1} isAnimationActive={false} tooltipType="none">
               <LabelList content={endLabel(lineLabels[3], C_SD2)} />
             </Line>
-            <Line yAxisId="l" dataKey="sd3" dot={false} stroke={C_SD3} strokeWidth={1} isAnimationActive={false}>
+            <Line yAxisId="l" dataKey="sd3" dot={false} stroke={C_SD3} strokeWidth={1} isAnimationActive={false} tooltipType="none">
               <LabelList content={endLabel(lineLabels[4], C_SD3)} />
             </Line>
-            {/* Progresión del niño: línea + puntos del historial atenuados. El punto
-                seleccionado no se dibuja aquí (lo resalta el marcador de abajo). */}
+            {/* Progresión del niño: línea + puntos. El actual usa hit-area transparente
+                para el tooltip; el marcador rojo de abajo es solo visual. */}
             <Scatter
               yAxisId="l"
               data={plotPoints}
@@ -215,14 +225,17 @@ export default function PediatricGrowthChart({
               isAnimationActive={false}
               shape={(props: { cx?: number; cy?: number; payload?: TrajectoryPoint }) => {
                 const { cx, cy, payload } = props;
-                if (!Number.isFinite(cx) || !Number.isFinite(cy) || payload?.isCurrent) return <g />;
+                if (!Number.isFinite(cx) || !Number.isFinite(cy)) return <g />;
+                if (payload?.isCurrent) {
+                  return <circle cx={cx} cy={cy} r={14} fill="transparent" stroke="none" />;
+                }
                 return <circle cx={cx} cy={cy} r={3} fill="#fff" stroke={HISTORY_DOT} strokeWidth={1.5} />;
               }}
             />
             {/* Medición seleccionada: halo suave + punto rojo encendido. La edad se
-                ve al pasar el cursor (tooltip). */}
-            <ReferenceDot yAxisId="l" x={current.x} y={currentY} r={9} fill={SELECTED} fillOpacity={0.18} stroke="none" isFront />
-            <ReferenceDot yAxisId="l" x={current.x} y={currentY} r={5.5} fill={SELECTED} stroke="#fff" strokeWidth={2} isFront />
+                ve al pasar el cursor (tooltip del Scatter). */}
+            <ReferenceDot yAxisId="l" x={current.x} y={currentY} r={9} fill={SELECTED} fillOpacity={0.18} stroke="none" isFront ifOverflow="extendDomain" />
+            <ReferenceDot yAxisId="l" x={current.x} y={currentY} r={5.5} fill={SELECTED} stroke="#fff" strokeWidth={2} isFront ifOverflow="extendDomain" />
           </ComposedChart>
         </ResponsiveContainer>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 px-1 pb-0.5 text-[9px] text-slate-400">

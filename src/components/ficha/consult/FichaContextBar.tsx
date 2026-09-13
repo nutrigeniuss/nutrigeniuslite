@@ -1,6 +1,17 @@
 import { useMemo, useState } from 'react';
 import { CalendarDays, ChevronDown, Ruler, Scale, Sparkles, UserRound } from 'lucide-react';
-import { ageInMonths } from '@/lib/anthropometry/pediatric';
+import {
+  ageInMonths,
+  formatAgeFromDates,
+  hasDownSyndrome,
+  isPediatricPatient,
+} from '@/lib/anthropometry/pediatric';
+import {
+  activePregnancy,
+  type PregnancyRecord,
+  type PregnancyType,
+} from '@/lib/gestation/gestationalGain';
+import { todayLocalDateStr } from '@/lib/weekRange';
 
 type MeasurementLike = {
   date?: string | null;
@@ -13,6 +24,8 @@ type PatientLike = {
   gender?: string | null;
   sex?: string | null;
   birth_date?: string | null;
+  pregnancies?: PregnancyRecord[] | null;
+  health_conditions?: { current_pathologies?: string[] };
 };
 
 type Props = {
@@ -22,13 +35,18 @@ type Props = {
   onMeasurementChange: (patch: Partial<MeasurementLike>) => void;
 };
 
-function formatAge(birthDate: string | null | undefined, onDate: string | null | undefined): string {
-  const months = ageInMonths(birthDate, onDate || undefined);
-  if (months == null) return '—';
-  const y = Math.floor(months / 12);
-  const m = Math.floor(months % 12);
-  if (y <= 0) return `${Math.floor(months)} m`;
-  return m > 0 ? `${y} a ${m} m` : `${y} a`;
+function formatAgeChip(birthDate: string | null | undefined, onDate: string | null | undefined): string {
+  const exact = formatAgeFromDates(birthDate, onDate);
+  if (exact) {
+    // Chip corto: "6 a 7 m" (el panel pediátrico sigue mostrando años/meses/días).
+    const months = ageInMonths(birthDate, onDate || undefined);
+    if (months == null) return exact;
+    const y = Math.floor(months / 12);
+    const m = Math.floor(months % 12);
+    if (y <= 0) return `${Math.floor(months)} m`;
+    return m > 0 ? `${y} a ${m} m` : `${y} a`;
+  }
+  return '—';
 }
 
 function formatDateLabel(iso: string | null | undefined): string {
@@ -38,9 +56,21 @@ function formatDateLabel(iso: string | null | undefined): string {
   return new Date(ms).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function num(raw: string): number | null {
+  if (raw === '' || raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function pathologyList(raw: string[] | undefined): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((s) => String(s).trim()).filter(Boolean);
+}
+
 /**
  * Cabecera de ficha compartida.
  * En móvil: resumen compacto colapsable; editar abre el formulario.
+ * Incluye gestante y síndrome de Down (antes en PatientDatosPanel).
  */
 export default function FichaContextBar({
   patient,
@@ -51,10 +81,59 @@ export default function FichaContextBar({
   const [open, setOpen] = useState(false);
   const [chipsOpen, setChipsOpen] = useState(false);
   const sex = patient.gender || patient.sex || 'Femenino';
+  const months = ageInMonths(patient.birth_date, measurement.date || undefined);
   const age = useMemo(
-    () => formatAge(patient.birth_date, measurement.date),
+    () => formatAgeChip(patient.birth_date, measurement.date),
     [patient.birth_date, measurement.date],
   );
+  const evalBeforeBirth = Boolean(
+    patient.birth_date
+    && measurement.date
+    && measurement.date < patient.birth_date,
+  );
+
+  const canBePregnant = sex === 'Femenino' && months != null && months >= 10 * 12;
+  const pregnancy = activePregnancy(patient.pregnancies);
+  const isPregnant = Boolean(canBePregnant && pregnancy);
+  const origen: 'fum' | 'eco' = pregnancy?.ultrasound?.onDate ? 'eco' : 'fum';
+  const type: PregnancyType = pregnancy?.type === 'twin' ? 'twin' : 'single';
+  const ecoWeeks = pregnancy?.ultrasound?.weeks ?? '';
+  const ecoDate = pregnancy?.ultrasound?.onDate ?? '';
+
+  const showDown = isPediatricPatient(months, patient.health_conditions?.current_pathologies)
+    || hasDownSyndrome(patient.health_conditions?.current_pathologies)
+    || (months == null && Boolean(patient.birth_date));
+  const isDown = hasDownSyndrome(patient.health_conditions?.current_pathologies);
+
+  const setPregnancy = (next: PregnancyRecord | null) => {
+    onPatientChange({ pregnancies: next ? [next] : [] });
+  };
+
+  const patchPregnancy = (partial: Partial<PregnancyRecord>, nextOrigen?: 'fum' | 'eco') => {
+    const next: PregnancyRecord = {
+      id: pregnancy?.id || 'session-pregnancy',
+      status: 'active',
+      type,
+      prePregnancyKg: pregnancy?.prePregnancyKg ?? null,
+      fum: pregnancy?.fum ?? null,
+      ultrasound: pregnancy?.ultrasound ?? null,
+      ...partial,
+    };
+    if (nextOrigen === 'fum') next.ultrasound = null;
+    if (nextOrigen === 'eco') next.fum = null;
+    setPregnancy(next);
+  };
+
+  const setDown = (checked: boolean) => {
+    const list = pathologyList(patient.health_conditions?.current_pathologies);
+    const without = list.filter((p) => !/down|trisom/i.test(p));
+    onPatientChange({
+      health_conditions: {
+        ...patient.health_conditions,
+        current_pathologies: checked ? [...without, 'Síndrome de Down'] : without,
+      },
+    });
+  };
 
   const chips = [
     { label: 'Edad', value: age, icon: <UserRound className="h-3.5 w-3.5" /> },
@@ -155,45 +234,199 @@ export default function FichaContextBar({
       </button>
 
       {open ? (
-        <div className="grid gap-3 border-t border-slate-100 bg-[#fafbfd] px-3.5 py-3.5 sm:grid-cols-2 sm:px-4 lg:grid-cols-3">
-          <label className="text-[11px] font-semibold text-slate-500 sm:col-span-2 lg:col-span-1">
-            Nombre
-            <input
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-              value={patient.full_name || ''}
-              onChange={(e) => onPatientChange({ full_name: e.target.value })}
-              placeholder="Consulta rápida"
-            />
-          </label>
-          <label className="text-[11px] font-semibold text-slate-500">
-            Sexo
-            <select
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-              value={sex}
-              onChange={(e) => onPatientChange({ gender: e.target.value, sex: e.target.value })}
-            >
-              <option value="Femenino">Femenino</option>
-              <option value="Masculino">Masculino</option>
-            </select>
-          </label>
-          <label className="text-[11px] font-semibold text-slate-500">
-            Fecha de nacimiento
-            <input
-              type="date"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-              value={patient.birth_date || ''}
-              onChange={(e) => onPatientChange({ birth_date: e.target.value || null })}
-            />
-          </label>
-          <label className="text-[11px] font-semibold text-slate-500">
-            Fecha de evaluación
-            <input
-              type="date"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-              value={measurement.date || ''}
-              onChange={(e) => onMeasurementChange({ date: e.target.value || null })}
-            />
-          </label>
+        <div className="space-y-4 border-t border-slate-100 bg-[#fafbfd] px-3.5 py-3.5 sm:px-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="text-[11px] font-semibold text-slate-500 sm:col-span-2 lg:col-span-1">
+              Nombre
+              <input
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                value={patient.full_name || ''}
+                onChange={(e) => onPatientChange({ full_name: e.target.value })}
+                placeholder="Consulta rápida"
+              />
+            </label>
+            <label className="text-[11px] font-semibold text-slate-500">
+              Sexo
+              <select
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                value={sex}
+                onChange={(e) => {
+                  const gender = e.target.value;
+                  const patch: Partial<PatientLike> = { gender, sex: gender };
+                  if (gender !== 'Femenino') patch.pregnancies = [];
+                  onPatientChange(patch);
+                }}
+              >
+                <option value="Femenino">Femenino</option>
+                <option value="Masculino">Masculino</option>
+              </select>
+            </label>
+            <label className="text-[11px] font-semibold text-slate-500">
+              Fecha de nacimiento
+              <input
+                type="date"
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                value={patient.birth_date || ''}
+                onChange={(e) => onPatientChange({ birth_date: e.target.value || null })}
+              />
+            </label>
+            <label className="text-[11px] font-semibold text-slate-500 sm:col-span-2 lg:col-span-1">
+              Fecha de evaluación
+              <input
+                type="date"
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                value={measurement.date || ''}
+                min={patient.birth_date || undefined}
+                onChange={(e) => onMeasurementChange({ date: e.target.value || null })}
+              />
+              {evalBeforeBirth ? (
+                <p className="mt-1 text-[11px] font-medium text-rose-600">
+                  La evaluación no puede ser anterior al nacimiento. Corrige el año (p. ej. {todayLocalDateStr().slice(0, 4)}).
+                </p>
+              ) : null}
+            </label>
+          </div>
+
+          {showDown ? (
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm font-semibold text-slate-800">
+              <input
+                type="checkbox"
+                checked={isDown}
+                onChange={(e) => setDown(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-brand-500"
+              />
+              Síndrome de Down (cartas Zemel)
+            </label>
+          ) : null}
+
+          {canBePregnant ? (
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm font-semibold text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={isPregnant}
+                  onChange={(e) => {
+                    if (!e.target.checked) {
+                      setPregnancy(null);
+                      return;
+                    }
+                    setPregnancy({
+                      id: 'session-pregnancy',
+                      status: 'active',
+                      type: 'single',
+                      prePregnancyKg: null,
+                      fum: null,
+                      ultrasound: null,
+                    });
+                  }}
+                  className="h-4 w-4 rounded border-slate-300 text-brand-500"
+                />
+                Gestante
+              </label>
+
+              {isPregnant ? (
+                <div className="mt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      ['fum', 'Por FUM'],
+                      ['eco', 'Por ecografía'],
+                    ] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => patchPregnancy({}, key)}
+                        className={`h-9 rounded-xl border text-xs font-semibold transition ${
+                          origen === key
+                            ? 'border-transparent bg-brand-500 text-white'
+                            : 'border-slate-200 bg-slate-50 text-slate-600'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {origen === 'fum' ? (
+                    <label className="text-[11px] font-semibold text-slate-500">
+                      Última menstruación
+                      <input
+                        type="date"
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                        value={pregnancy?.fum || ''}
+                        onChange={(e) => patchPregnancy({ fum: e.target.value || null, ultrasound: null })}
+                      />
+                    </label>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-[11px] font-semibold text-slate-500">
+                        Semanas por eco
+                        <input
+                          type="number"
+                          min={0}
+                          max={42}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                          value={ecoWeeks}
+                          onChange={(e) => {
+                            const weeks = num(e.target.value);
+                            patchPregnancy({
+                              fum: null,
+                              ultrasound: weeks == null
+                                ? null
+                                : {
+                                    weeks,
+                                    days: 0,
+                                    onDate: ecoDate || (measurement.date || todayLocalDateStr()),
+                                  },
+                            });
+                          }}
+                        />
+                      </label>
+                      <label className="text-[11px] font-semibold text-slate-500">
+                        Fecha de la eco
+                        <input
+                          type="date"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                          value={ecoDate}
+                          onChange={(e) => {
+                            const onDate = e.target.value;
+                            const weeks = pregnancy?.ultrasound?.weeks ?? null;
+                            patchPregnancy({
+                              fum: null,
+                              ultrasound: onDate && weeks != null ? { weeks, days: 0, onDate } : null,
+                            });
+                          }}
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  <label className="text-[11px] font-semibold text-slate-500">
+                    Peso pregestacional
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                        value={pregnancy?.prePregnancyKg ?? ''}
+                        onChange={(e) => patchPregnancy({ prePregnancyKg: num(e.target.value) })}
+                      />
+                      <span className="pointer-events-none absolute right-3 top-[calc(50%+0.35rem)] -translate-y-1/2 text-xs font-semibold text-slate-400">kg</span>
+                    </div>
+                  </label>
+
+                  <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={type === 'twin'}
+                      onChange={(e) => patchPregnancy({ type: e.target.checked ? 'twin' : 'single' })}
+                      className="h-4 w-4 rounded border-slate-300 text-brand-500"
+                    />
+                    Gestación múltiple
+                  </label>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -118,16 +118,50 @@ export default function PediatricAnthroPanel({
     const hist = measurements && measurements.length > 0 ? measurements : null;
     return assessment.results
       .filter((r) => typeof r.chartX === 'number' && typeof r.chartValue === 'number')
-      .map((r) => ({
-        indicator: r.indicator,
-        label: r.indicatorLabel,
-        tone: r.classification.tone,
-        points: hist
+      .map((r) => {
+        let points = hist
           ? (zemel
               ? buildZemelTrajectory(r.indicator as ZemelPublicIndicator, sx, birthDate, hist, measurementDate)
               : buildIndicatorTrajectory(r.indicator as PediatricIndicator, sx, birthDate, hist, measurementDate))
-          : [{ x: r.chartX as number, value: r.chartValue as number, isCurrent: true, date: measurementDate ?? null, ageLabel: lbl }],
-      }))
+          : [];
+        // Asegurar el punto de ESTA consulta con la edad/x del assessment (misma
+        // que el encabezado). Si el historial no marcó isCurrent o faltó la fila,
+        // no dejamos que el gráfico use otra edad.
+        const dateKey = (d?: string | null) => (d ? String(d).slice(0, 10) : null);
+        const curKey = dateKey(measurementDate);
+        let hasCurrent = false;
+        points = points.map((p) => {
+          const isCur = p.isCurrent || (curKey != null && dateKey(p.date) === curKey);
+          if (!isCur) return p;
+          hasCurrent = true;
+          return {
+            ...p,
+            x: r.chartX as number,
+            value: r.chartValue as number,
+            isCurrent: true,
+            ageLabel: lbl,
+            date: measurementDate ?? p.date,
+          };
+        });
+        if (!hasCurrent) {
+          points = [
+            ...points,
+            {
+              x: r.chartX as number,
+              value: r.chartValue as number,
+              isCurrent: true,
+              date: measurementDate ?? null,
+              ageLabel: lbl,
+            },
+          ];
+        }
+        return {
+          indicator: r.indicator,
+          label: r.indicatorLabel,
+          tone: r.classification.tone,
+          points,
+        };
+      })
       .filter((c) => c.points.length > 0);
   }, [assessment, gender, birthDate, measurementDate, measurements]);
 

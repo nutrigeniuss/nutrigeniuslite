@@ -10,6 +10,7 @@ import {
 import { clearPatientDietCache } from '@/lib/patientDietCache';
 import { clearSessionDietStorage } from '@/lib/sessionDietDb';
 import { SESSION_FICHA_ID } from '@/lib/sessionFicha';
+import { todayLocalDateStr, toLocalDateStr } from '@/lib/weekRange';
 
 const STORAGE_KEY = 'ng_lite_calc_ficha_v2';
 const LEGACY_STORAGE_KEYS = ['ng_lite_calc_ficha_v1'];
@@ -74,7 +75,8 @@ type FichaState = {
 };
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  // Hora local (Perú UTC−5). toISOString() corría la fecha al día siguiente de noche.
+  return todayLocalDateStr();
 }
 
 function emptyWeek(): DietWeekDay[] {
@@ -93,7 +95,7 @@ function emptyWeek(): DietWeekDay[] {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
     return {
-      dateStr: d.toISOString().slice(0, 10),
+      dateStr: toLocalDateStr(d),
       meals: meals(),
       exchanges: [
         { group: 'Cereales', portions: 0 },
