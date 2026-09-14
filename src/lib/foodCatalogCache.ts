@@ -1,58 +1,68 @@
-// Cache en memoria del catálogo (fuente = Supabase foods).
+// Cache en memoria + localStorage del catálogo (fuente = Supabase foods).
+// Scopeado por userId: el catálogo incluye alimentos privados del nutricionista
+// y no debe filtrarse a otra cuenta en un PC compartido.
 
-import { createLocalCache } from '@/lib/localCache';
+import { createScopedLocalCache } from '@/lib/localCache';
 import { FOOD_LIST_COLUMNS, listAccessibleFoods } from '@/lib/catalogData';
 import { logger, errorMessage } from '@/lib/logger';
 
 const TTL_MS = 24 * 60 * 60 * 1000;
+const KEY_PREFIX = 'nutrigenius_food_catalog_v3';
 
-const foodCatalogCache = createLocalCache({
-  // v2: invalida caches truncadas a 1000 filas (antes de paginateAll).
-  key: 'nutrigenius_food_catalog_v2',
+const foodCatalogCache = createScopedLocalCache({
+  keyPrefix: KEY_PREFIX,
   ttlMs: TTL_MS,
 });
 
-let memoryData: unknown[] | null = null;
-let memoryTimestamp = 0;
+type MemorySlot = { data: unknown[]; timestamp: number };
+const memoryByUser = new Map<string, MemorySlot>();
+const inflightByUser = new Map<string, Promise<unknown[]>>();
 
-export const readFoodCatalogCache = <T = unknown>(): T[] | null => {
-  if (memoryData && Date.now() - memoryTimestamp <= TTL_MS) return memoryData as T[];
-  const fromDisk = foodCatalogCache.read() as T[] | null;
+export const readFoodCatalogCache = <T = unknown>(userId?: string | null): T[] | null => {
+  if (!userId) return null;
+  const mem = memoryByUser.get(userId);
+  if (mem && Date.now() - mem.timestamp <= TTL_MS) return mem.data as T[];
+  const fromDisk = foodCatalogCache.read(userId) as T[] | null;
   if (fromDisk) {
-    memoryData = fromDisk as unknown[];
-    memoryTimestamp = Date.now();
+    memoryByUser.set(userId, { data: fromDisk as unknown[], timestamp: Date.now() });
   }
   return fromDisk;
 };
 
-export const writeFoodCatalogCache = <T = unknown>(data: T[]): void => {
-  if (Array.isArray(data)) {
-    memoryData = data as unknown[];
-    memoryTimestamp = Date.now();
-  }
-  foodCatalogCache.write(data);
+export const writeFoodCatalogCache = <T = unknown>(userId: string, data: T[]): void => {
+  if (!userId || !Array.isArray(data)) return;
+  memoryByUser.set(userId, { data: data as unknown[], timestamp: Date.now() });
+  foodCatalogCache.write(userId, data);
 };
 
-export const clearFoodCatalogCache = (): void => {
-  memoryData = null;
-  memoryTimestamp = 0;
-  inflight = null;
-  foodCatalogCache.clear();
+/** Sin userId limpia toda la familia (logout / higiene de PC compartida). */
+export const clearFoodCatalogCache = (userId?: string): void => {
+  if (userId) {
+    memoryByUser.delete(userId);
+    inflightByUser.delete(userId);
+    foodCatalogCache.clear(userId);
+  } else {
+    memoryByUser.clear();
+    inflightByUser.clear();
+    foodCatalogCache.clear();
+  }
   try {
     localStorage.removeItem('nutrigenius_food_catalog_v1');
+    localStorage.removeItem('nutrigenius_food_catalog_v2');
   } catch {
     /* ignore */
   }
 };
 
-let inflight: Promise<unknown[]> | null = null;
+export const prefetchFoodCatalog = async <T = unknown>(userId?: string | null): Promise<T[]> => {
+  if (!userId) return [];
+  const existing = inflightByUser.get(userId);
+  if (existing) return existing as Promise<T[]>;
 
-export const prefetchFoodCatalog = async <T = unknown>(): Promise<T[]> => {
-  if (inflight) return inflight as Promise<T[]>;
-  inflight = listAccessibleFoods(undefined, FOOD_LIST_COLUMNS)
+  const pending = listAccessibleFoods(undefined, FOOD_LIST_COLUMNS)
     .then((result) => {
       const data = (result?.data ?? []).map((food) => ({ ...food, _lite: true })) as unknown[];
-      writeFoodCatalogCache(data);
+      writeFoodCatalogCache(userId, data);
       return data;
     })
     .catch((error) => {
@@ -62,7 +72,9 @@ export const prefetchFoodCatalog = async <T = unknown>(): Promise<T[]> => {
       return [] as unknown[];
     })
     .finally(() => {
-      inflight = null;
+      inflightByUser.delete(userId);
     });
-  return inflight as Promise<T[]>;
+
+  inflightByUser.set(userId, pending);
+  return pending as Promise<T[]>;
 };

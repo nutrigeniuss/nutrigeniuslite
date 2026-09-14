@@ -1,5 +1,5 @@
 /** Longitud mínima de contraseña en Lite (UI + edge admin-manage-user). */
-export const MIN_PASSWORD_LENGTH = 8;
+export const MIN_PASSWORD_LENGTH = 10;
 
 /** Devuelve mensaje de error o null si la contraseña es válida. */
 export function validatePassword(password: string): string | null {

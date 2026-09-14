@@ -11,7 +11,7 @@ import {
   isInactivityExpired,
   touchLastActivity,
 } from './sessionInactivity';
-import { clearLiteSessionStorage } from './clearLiteSessionStorage';
+import { clearAuthSensitiveCaches } from './clearLiteSessionStorage';
 
 export type ProfileRow = LiteAccessProfile & {
   id: string;
@@ -109,9 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(next);
       if (next?.user) {
         if (event === 'SIGNED_IN') touchLastActivity();
+        // Evita un frame con flags admin/canCalculate del usuario anterior.
+        setProfile(null);
         void fetchProfile(next.user.id).then(setProfile);
       } else {
         clearLastActivity();
+        // Conserva ficha/dietas (hasta Nueva ficha); limpia cachés por usuario.
+        clearAuthSensitiveCaches();
         setProfile(null);
       }
     });
@@ -214,10 +218,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     clearLastActivity();
-    clearLiteSessionStorage();
+    // No borrar ficha/dietas: viven hasta «Nueva ficha». Sí limpiar cachés
+    // sensibles (catálogo con alimentos privados) al cambiar de cuenta.
+    clearAuthSensitiveCaches(session?.user?.id);
     await supabase?.auth.signOut();
     setProfile(null);
-  }, []);
+  }, [session?.user?.id]);
 
   const access = resolveLiteAccess(profile ?? {});
   const value = useMemo<AuthState>(() => ({

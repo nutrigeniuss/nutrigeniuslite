@@ -27,14 +27,10 @@ import { FoodResultsTableHead, MacroValueCell } from "@/components/foods/FoodRes
 // Recall24hEditor.jsx. Llama `onAdd(item)` al agregar un alimento.
 export default function RecallFoodSearch({ onAdd }) {
   const { user } = useAuth();
-  // Arranca hidratado desde la caché COMPARTIDA (la misma que calienta el
-  // creador de dietas): si ya está caliente, la lista aparece al instante.
-  // Los registros vienen "ligeros" (sin `nutrients`).
-  const [foods, setFoods] = useState(() => readFoodCatalogCache() || []);
-  const [loading, setLoading] = useState(() => {
-    const cached = readFoodCatalogCache();
-    return !(Array.isArray(cached) && cached.length > 0);
-  });
+  const userId = user?.id || "";
+  // Arranca vacío; hidrata desde caché scopeada al userId (sin fugas entre cuentas).
+  const [foods, setFoods] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("alimentos");
   const [itemState, setItemState] = useState({});
   const [added, setAdded] = useState({});
@@ -65,15 +61,19 @@ export default function RecallFoodSearch({ onAdd }) {
   }, []);
 
   useEffect(() => {
+    if (!userId) return undefined;
+
     const loadCatalog = async () => {
-      const hasCached = (readFoodCatalogCache()?.length ?? 0) > 0;
-      if (!hasCached) setLoading(true);
+      const cached = readFoodCatalogCache(userId);
+      if (cached?.length) {
+        setFoods(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
 
       try {
-        // Prefetch LIGERO compartido (dedupe + caché): trae todos los alimentos
-        // accesibles sin el JSON `nutrients` (−61% de payload). El filtro por
-        // país se aplica en processedFoods. Los micros se hidratan al agregar.
-        const foodsData = await prefetchFoodCatalog();
+        const foodsData = await prefetchFoodCatalog(userId);
         setFoods(foodsData || []);
       } catch (error) {
         logger.error('Error cargando catálogo del recordatorio 24h', { error: errorMessage(error) });
@@ -88,7 +88,7 @@ export default function RecallFoodSearch({ onAdd }) {
     };
 
     void loadCatalog();
-  }, [user?.id, user?.country]);
+  }, [userId]);
 
   useEffect(() => {
     if (tab !== "usda") return;
@@ -441,8 +441,8 @@ export default function RecallFoodSearch({ onAdd }) {
           onClose={() => setShowCreateFood(false)}
           onSaved={() => {
             setShowCreateFood(false);
-            clearFoodCatalogCache();
-            void prefetchFoodCatalog()
+            clearFoodCatalogCache(userId);
+            void prefetchFoodCatalog(userId)
               .then((next) => setFoods(next || []))
               .catch((error) => {
                 logger.error('Error refrescando catálogo tras crear alimento', { error: errorMessage(error) });

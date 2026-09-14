@@ -8,7 +8,7 @@
 // Tras el refactor, cada alimento es un único registro con su arreglo
 // `household_measures`. Este helper cubre ambos escenarios.
 
-import { scaleFoodNutrientsForPlan } from "./foodNutrients";
+import { scaleFoodNutrientsForPlan, getFoodMacroValue } from "./foodNutrients";
 
 type FoodLike = {
   id?: string | number;
@@ -85,10 +85,10 @@ export function processFoodsForSearch(foods: FoodLike[]): ProcessedFood[] {
         id: f.id,
         name,
         category: f.category || "",
-        calories: round1((f.calories || 0) * factor100),
-        protein: round1((f.protein || 0) * factor100),
-        fat: round1((f.fat || 0) * factor100),
-        carbs: round1((f.carbs || 0) * factor100),
+        calories: round1((getFoodMacroValue(f, "calories") ?? 0) * factor100),
+        protein: round1((getFoodMacroValue(f, "protein") ?? 0) * factor100),
+        fat: round1((getFoodMacroValue(f, "fat") ?? 0) * factor100),
+        carbs: round1((getFoodMacroValue(f, "carbs") ?? 0) * factor100),
         ...(scaleFoodNutrientsForPlan(f as any, factor100) as Record<string, unknown>),
         portion_grams: 100,
         household_measures: existingMeasures,

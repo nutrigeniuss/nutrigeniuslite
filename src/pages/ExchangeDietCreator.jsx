@@ -643,6 +643,17 @@ export default function ExchangeDietCreator() {
       active_scenario_key: activeScenario?.key || null,
     };
 
+    if (!user?.id) {
+      isSavingRef.current = false;
+      setSaving(false);
+      toast({
+        title: origin === "autosave" ? "No se pudo autoguardar el plan" : "Sesión no disponible",
+        description: "Vuelve a iniciar sesión para guardar.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     // Defense-in-depth: scope the UPDATE to the current nutritionist so a
     // stolen plan id can never be exploited to overwrite someone else's
     // exchange plan from an authenticated session.
@@ -654,13 +665,11 @@ export default function ExchangeDietCreator() {
       logger.error('Error guardando plan por intercambios', { error: result.error?.message });
       isSavingRef.current = false;
       setSaving(false);
-      if (origin === "manual") {
-        toast({
-          title: "No se pudo guardar el plan por intercambios",
-          description: result.error.message || "Intenta nuevamente.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: origin === "autosave" ? "No se pudo autoguardar el plan por intercambios" : "No se pudo guardar el plan por intercambios",
+        description: result.error.message || "Intenta nuevamente.",
+        variant: "destructive",
+      });
       return false;
     }
 
@@ -766,7 +775,7 @@ export default function ExchangeDietCreator() {
     } catch {
       /* ignore */
     }
-    void flushAutosave();
+    await flushAutosave();
     if (typeof window !== "undefined" && window.history.length > 1) {
       navigate(-1);
     } else {

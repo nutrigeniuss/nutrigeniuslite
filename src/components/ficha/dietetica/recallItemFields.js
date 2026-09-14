@@ -2,7 +2,7 @@
 // Los items guardan sus macros/micros como TOTAL de la porción elegida y dejan
 // `quantity` en 1. Estas funciones recalculan ese total a partir de la "base"
 // editable (alimento/receta + unidad + cantidad). Extraído de Recall24hEditor.jsx.
-import { scaleFoodNutrientsForPlan } from "@/lib/foodNutrients";
+import { scaleFoodNutrientsForPlan, getFoodMacroValue } from "@/lib/foodNutrients";
 import { getFoodUnits } from "@/lib/foodDisplay";
 import { roundNutritionValue } from "@/components/foods/FoodSearchHelpers";
 
@@ -19,15 +19,16 @@ export const computeFoodItemFields = (food, unitIndex, unitQuantity) => {
   const unitLabel = unit.isHousehold
     ? `${roundNutritionValue(qty)} ${unit.label} (${Math.round(totalGrams)}g)`
     : `${Math.round(totalGrams)}g`;
+  const macro = (key) => Math.round((getFoodMacroValue(food, key) ?? 0) * factor * 10) / 10;
   return {
     unitIndex: idx,
     unitQuantity: qty,
     totalGrams,
     unit: unitLabel,
-    calories: Math.round((food.calories || 0) * factor * 10) / 10,
-    protein: Math.round((food.protein || 0) * factor * 10) / 10,
-    carbs: Math.round((food.carbs || 0) * factor * 10) / 10,
-    fat: Math.round((food.fat || 0) * factor * 10) / 10,
+    calories: macro("calories"),
+    protein: macro("protein"),
+    carbs: macro("carbs"),
+    fat: macro("fat"),
     ...nutrientPayload,
   };
 };

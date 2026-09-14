@@ -20,11 +20,8 @@ export default function FoodSearch({ onAdd }) {
   const [loading, setLoading] = useState(false);
   const [itemState, setItemState] = useState({});
   const [added, setAdded] = useState({});
-  const [allFoods, setAllFoods] = useState(() => readFoodCatalogCache() || []);
-  const [allFoodsLoaded, setAllFoodsLoaded] = useState(() => {
-    const cached = readFoodCatalogCache();
-    return Array.isArray(cached) && cached.length > 0;
-  });
+  const [allFoods, setAllFoods] = useState([]);
+  const [allFoodsLoaded, setAllFoodsLoaded] = useState(false);
   const [foodSearch, setFoodSearch] = useState("");
   const [debouncedFoodSearch, setDebouncedFoodSearch] = useState("");
   const [foodPage, setFoodPage] = useState(1);
@@ -46,9 +43,15 @@ export default function FoodSearch({ onAdd }) {
   }, []);
 
   useEffect(() => {
+    if (!user?.id) return undefined;
     let cancelled = false;
     const refresh = () => {
-      prefetchFoodCatalog()
+      const cached = readFoodCatalogCache(user.id);
+      if (cached?.length) {
+        setAllFoods(cached);
+        setAllFoodsLoaded(true);
+      }
+      prefetchFoodCatalog(user.id)
         .then((data) => {
           if (cancelled) return;
           setAllFoods(data || []);
@@ -65,7 +68,7 @@ export default function FoodSearch({ onAdd }) {
       cancelled = true;
       window.removeEventListener("ng-local-foods-changed", onLocal);
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedFoodSearch(foodSearch), 150);

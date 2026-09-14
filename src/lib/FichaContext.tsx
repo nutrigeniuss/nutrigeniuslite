@@ -175,12 +175,11 @@ export function FichaProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
+        // Solo paciente: dietMode/dietWeek ya no se usan (dietas en sessionDietDb).
         patient: persistablePatient(patient),
-        dietMode,
-        dietWeek,
       }),
     );
-  }, [patient, dietMode, dietWeek]);
+  }, [patient]);
 
   const updatePatient = useCallback(async (patch: Partial<FichaPatient>) => {
     // Bioquímica no entra al estado de ficha ni a localStorage.

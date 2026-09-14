@@ -187,13 +187,22 @@ export const getFoodMacroValue = (
   food: FoodLike,
   key: 'calories' | 'protein' | 'carbs' | 'fat',
 ): number | null => {
-  const directValue = toFiniteNumber(food[key]);
-  if (directValue != null) {
+  // Carbs: muchos registros del catálogo traen carbs=0 y el valor real en
+  // available_carbs (Excel/import). Tratar 0 como “vacío” solo cuando existe
+  // available_carbs > 0; si ambos son 0 (aceite) se respeta el 0.
+  if (key === 'carbs') {
+    const directValue = toFiniteNumber(food.carbs);
+    const available = getFoodNutrientValue(food, 'available_carbs');
+    if (directValue != null && !(directValue === 0 && available != null && available > 0)) {
+      return directValue;
+    }
+    if (available != null) return available;
     return directValue;
   }
 
-  if (key === 'carbs') {
-    return getFoodNutrientValue(food, 'available_carbs');
+  const directValue = toFiniteNumber(food[key]);
+  if (directValue != null) {
+    return directValue;
   }
 
   // Compatibilidad con importaciones antiguas donde la columna "calorias"

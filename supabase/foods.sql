@@ -76,9 +76,12 @@ create policy "foods_select_accessible"
   using (
     public.has_lite_access()
     and (
-      nutritionist_id is null
+      public.is_lite_admin()
       or nutritionist_id = auth.uid()
-      or public.is_lite_admin()
+      or (
+        nutritionist_id is null
+        and coalesce(review_status, 'approved') = 'approved'
+      )
     )
   );
 

@@ -42,9 +42,10 @@ export default function DieteticaPanel({
   }, [patient.measurements, consultIndex]);
 
   const targetCalories = useMemo(() => {
+    const req = measurement?.requirement || patient.requirement || {};
     const fromReq =
-      Number(measurement?.requirement?.calories) ||
-      Number(patient.requirement?.calories) ||
+      Number(req.target_calories) ||
+      Number(req.calories) ||
       Number(patient.target_calories) ||
       0;
     return fromReq > 0 ? fromReq : 0;

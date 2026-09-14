@@ -164,7 +164,7 @@ export default function DietCreator() {
   // deduplicado, por lo que el propio buscador reutiliza esta misma petición.
   useEffect(() => {
     if (!user?.id) return;
-    void prefetchFoodCatalog();
+    void prefetchFoodCatalog(user.id);
   }, [user?.id]);
 
   const syncPlanIdInUrl = useCallback((planId) => {
@@ -532,6 +532,25 @@ export default function DietCreator() {
       is_catalog: false,
     };
 
+    if (!user?.id) {
+      isSavingRef.current = false;
+      setSaving(false);
+      if (origin !== "autosave") {
+        toast({
+          title: "Sesión no disponible",
+          description: "Vuelve a iniciar sesión para guardar.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "No se pudo autoguardar la dieta",
+          description: "Sesión no disponible. Vuelve a iniciar sesión.",
+          variant: "destructive",
+        });
+      }
+      return false;
+    }
+
     // Defense-in-depth: scope the UPDATE to the current nutritionist so a
     // stolen plan id can never be exploited to overwrite someone else's
     // plan from an authenticated session. INSERT doesn't need it because
@@ -544,13 +563,11 @@ export default function DietCreator() {
       logger.error('Error guardando plan nutricional', { error: result.error?.message });
       isSavingRef.current = false;
       setSaving(false);
-      if (origin === "manual") {
-        toast({
-          title: "No se pudo guardar la dieta",
-          description: result.error.message || "Intenta nuevamente.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: origin === "autosave" ? "No se pudo autoguardar la dieta" : "No se pudo guardar la dieta",
+        description: result.error.message || "Intenta nuevamente.",
+        variant: "destructive",
+      });
       return false;
     }
 
@@ -591,13 +608,13 @@ export default function DietCreator() {
   // Volver a la ficha. Guarda antes de salir (el router no dispara
   // beforeunload) y deja marcada la pestaña Dieta→Alimentos para que al
   // remontar ConsultDetail no caiga en la primera pestaña antropométrica.
-  const handleBackToPatient = () => {
+  const handleBackToPatient = async () => {
     try {
       sessionStorage.setItem("ng_lite_ficha_tab", "alimentos");
     } catch {
       /* private mode / quota — el navigate sigue igual */
     }
-    void flushAutosave();
+    await flushAutosave();
     if (typeof window !== "undefined" && window.history.length > 1) {
       navigate(-1);
     } else {

@@ -1,4 +1,4 @@
-import { scaleFoodNutrientsForPlan } from "@/lib/foodNutrients";
+import { scaleFoodNutrientsForPlan, getFoodMacroValue } from "@/lib/foodNutrients";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers puros para construir y manipular "items de plan de dieta": un alimento
@@ -129,16 +129,17 @@ export const buildFoodPlanItem = (food, quantity, unitIndex = 0, previousItem = 
   const perUnitFactor = selectedUnit.isHousehold ? selectedUnit.grams / portionGrams : 1 / portionGrams;
   // Precisión completa a propósito (ver nota de cabecera): el redondeo es al render.
   const nutrientPayload = scaleFoodNutrientsForPlan(referenceFood, perUnitFactor, { round: false });
+  const macro = (key) => (getFoodMacroValue(referenceFood, key) ?? 0) * perUnitFactor;
 
   return {
     ...previousItem,
     name: previousItem.name || referenceFood.name,
     quantity: safeQuantity,
     unit: formatFoodUnitLabel(selectedUnit, safeQuantity),
-    calories: (Number(referenceFood.calories) || 0) * perUnitFactor,
-    protein: (Number(referenceFood.protein) || 0) * perUnitFactor,
-    carbs: (Number(referenceFood.carbs) || 0) * perUnitFactor,
-    fat: (Number(referenceFood.fat) || 0) * perUnitFactor,
+    calories: macro("calories"),
+    protein: macro("protein"),
+    carbs: macro("carbs"),
+    fat: macro("fat"),
     ...nutrientPayload,
     unit_options: unitOptions,
     selected_unit_index: selectedUnitIndex,
